@@ -18,7 +18,6 @@ import {
 // import PharmacyWorkflow from '../prescription/PharmacyFlow';
 // import PharmacyFinancialReports from '../report/PharmacyFinancialReports';
 
-// import UserPage from '../user/UserPage';
 // import PatientPage from '../patient/PatientPage';
 // import AlertPage from '../alert/AlertPage';
 // import PharmacistPage from '../PharmacistPage';
@@ -36,18 +35,21 @@ import DashboardHeader from './DashboardHeader';
 // import InventoryWorkflow from '../inventory/InventoryFlow';
 // import ClaimFlow from '../claim/ClaimFlow';
 // import ContactLogTestPage from '../prescription/TestPrescriptionLog';
-import UserList from '../users/UserList';
-import AuthLogTable from '../authlogs/AuthLogTable';
+
 import OktaLoginModal from '../../components/OktaLogin';
 import SilentLogin from '../../components/SilientLogin';
-import StationManagement from '../stations/StationManagement';
-import DeviceFingerprintManagement from '../devices/DeviceFingerprintManagement';
-import PrescriberManagement from '../prescribers/PrescriberManagement';
+
+import DeviceFingerprintPage from '../devices/DeviceFingerprintPage';
+import PrescriberManagement from '../prescribers/PrescriberPage';
 import PatientWithInsurancePage from '../patients/PatientWithInsurancePage';
 import InsurancePlanManagement from '../insurances/InsurancePlanManagement';
 import WorkflowDashboard from '../prescriptions/WorkflowDashboard';
 import UserPage from '../users/UserPage';
 import StationPage from '../stations/StationPage';
+import PrescriberPage from '../prescribers/PrescriberPage';
+import AuthLogPage from '../authlogs/AuthLogPage';
+import InsuranceCompanyWithPlansPage from '../insurances/InsuranceCompanyWithPlansPage';
+import PatientInsurancePage from '../patients/PatientInsurancePage';
 
 export default function Dashboard() {
   const { user, appUser, isAuthenticated, isLoading, stationName, login, logout } = useUser();
@@ -60,10 +62,10 @@ export default function Dashboard() {
 
   const menuItems = [
     { id: 'dashboard', path: '/', icon: LayoutDashboard, label: 'Dashboard' },
-    // { id: 'prescriber', path: '/prescriber', icon: TriangleAlert, label: 'Prescriber' },
-    // { id: 'insurances', path: '/insurances', icon: TriangleAlert, label: 'Insurances' },
-    // { id: 'patients', path: '/patients', icon: TriangleAlert, label: 'Patients' },
-    // { id: 'authlogs', path: '/authlogs', icon: TriangleAlert, label: 'AuthLogs' },
+    { id: 'prescriber', path: '/prescriber', icon: TriangleAlert, label: 'Prescriber' },
+    { id: 'insurances', path: '/insurances', icon: TriangleAlert, label: 'Insurances' },
+    { id: 'patients', path: '/patients', icon: TriangleAlert, label: 'Patients' },
+    { id: 'authlogs', path: '/authlogs', icon: TriangleAlert, label: 'AuthLogs' },
     // { id: 'inventory', path: '/inventory', icon: Users, label: 'Inventory' },
     // { id: 'claims', path: '/claims', icon: Users, label: 'Claims' },
     // { id: 'users', path: '/users', icon: Users, label: 'Users' },
@@ -77,7 +79,6 @@ export default function Dashboard() {
     // { id: 'prescriptonlog', path: '/testprescrptionlog', icon: Settings, label: 'testprescrptionlog' },
     { id: 'users', path: '/users', icon: Computer, label: 'Users' },
     { id: 'stations', path: '/stations', icon: Computer, label: 'Stations' },
-    { id: 'stations2', path: '/stations2', icon: Computer, label: 'Stations2' },
     { id: 'devices', path: '/devices', icon: Computer, label: 'devices' },
 ];
 
@@ -101,12 +102,12 @@ export default function Dashboard() {
         {/* Routes */}
         <div className="flex-1 overflow-y-auto p-6">
           <Routes>
-            <Route path="/" element={<UserList />} />
+            <Route path="/" element={<UserPage />} />
             {/* <Route path="/" element={<WorkflowDashboard />} /> */}
-            {/* <Route path="/prescriber" element={<PrescriberManagement />} />
-            <Route path="/insurances" element={<InsurancePlanManagement />} />
-            <Route path="/patients" element={<PatientWithInsurancePage />} />
-            <Route path="/authlogs" element={<AuthLogTable />} /> */}
+          <Route path="/prescriber" element={<PrescriberPage />} />
+            <Route path="/insurances" element={<InsuranceCompanyWithPlansPage />} />
+            <Route path="/patients" element={<PatientInsurancePage />} />
+  
             {/* <Route path="/inventory" element={<InventoryWorkflow />} />
             <Route path="/claims" element={<ClaimFlow />} />
             <Route path="/users" element={<UserPage />} />
@@ -118,10 +119,10 @@ export default function Dashboard() {
             <Route path="/systemlogs" element={<AdminAuthDashboard />} />
             <Route path="/settings" element={<DirMarginDashboard />} />
             <Route path="/testprescrptionlog" element={<ContactLogTestPage />} /> */}
+            <Route path="/authlogs" element={<AuthLogPage />} />
             <Route path="/users" element={<UserPage />} />
-            <Route path="/stations" element={<StationManagement />} />
-            <Route path="/stations2" element={<StationPage />} />
-            <Route path="/devices" element={<DeviceFingerprintManagement />} />
+            <Route path="/stations" element={<StationPage />} />
+            <Route path="/devices" element={<DeviceFingerprintPage />} />
           </Routes>
         </div>
 

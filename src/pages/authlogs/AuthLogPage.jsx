@@ -3,7 +3,7 @@ import { useUser } from "../../context/UserContext";
 
 import init from "../../init";
 
-export default function AuthLogTable() {
+export default function AuthLogPage() {
   const { appUser } = useUser();
   const [logs, setLogs] = useState([]);
   const [page, setPage] = useState(0);

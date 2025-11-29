@@ -1,13 +1,11 @@
-
-
-const DeleteDialog = ({deleteConfirmId, setDeleteConfirmId, confirmDelete}) => {
+const DeleteDialog = ({deleteConfirmId, setDeleteConfirmId, confirmDelete, name}) => {
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg shadow-xl max-w-sm w-full">
                 <div className="p-6">
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete User</h3>
                     <p className="text-gray-600 mb-6">
-                        Are you sure you want to delete this user? This action cannot be undone.
+                        Are you sure you want to delete this {name}? This action cannot be undone.
                     </p>
                     <div className="flex gap-3 justify-end">
                         <button

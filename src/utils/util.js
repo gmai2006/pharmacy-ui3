@@ -59,8 +59,11 @@ export async function getIPDetails() {
     };
 }
 
-// getIPDetails().then(info => {
-//     console.log(`IP: ${info.ip}`);
-//     console.log(`Location: ${info.city}, ${info.region}, ${info.country}`);
-//     console.log(`Timezone: ${info.timezone}`);
-// });
+const US_STATES = [
+  "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA",
+  "HI","ID","IL","IN","IA","KS","KY","LA","ME","MD",
+  "MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ",
+  "NM","NY","NC","ND","OH","OK","OR","PA","RI","SC",
+  "SD","TN","TX","UT","VT","VA","WA","WV","WI","WY"
+];
+

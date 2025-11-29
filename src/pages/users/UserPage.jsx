@@ -6,17 +6,15 @@ import UserSummary from './UserSummary';
 import Notification from '../../components/Notification';
 import UserDialog from './UserDialog';
 import { useUser } from "../../context/UserContext";
-import DeleteDialog from './DeleteDialog';
+import DeleteDialog from '../../components/DeleteDialog';
 
 const headers = {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
 };
-const userSelectUrl = '/' + init.appName + '/api/' + 'users/select/100';
-const roleUrl = '/' + init.appName + '/api/' + 'roles/';
-const userUrl = `/${init.appName}/api/users/`;
 
-const getUserByEmail = '/' + init.appName + '/api/' + 'users/byEmail/';
+const roleUrl = '/' + init.appName + '/api/' + 'roles/';
+const userUrl = `/${init.appName}/api/users-with-roles/`;
 
 const roleOptions = {
     1: { color: 'bg-red-100 text-red-800' },
@@ -215,7 +213,7 @@ const UserPage = () => {
 
     const formatDate = (timestamp) => {
         if (!timestamp) return '';
-        const date = new Date(timestamp*1000);
+        const date = new Date(timestamp * 1000);
         return date.toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'short',
@@ -231,6 +229,8 @@ const UserPage = () => {
             const response = await fetch(`${userUrl}${id}`, {
                 method: 'DELETE',
                 headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
                     "X-User-Email": appUser.email,
                 },
             });
@@ -254,13 +254,14 @@ const UserPage = () => {
     const handleAddUser = async (userData) => {
         try {
             const response = await fetch(userUrl, {
-                method: 'PUT',
+                method: 'POST',
                 headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
                     "X-User-Email": appUser.email,
                 },
                 body: JSON.stringify({
-                    ...userData,
-                    roleId: parseInt(userData.roleId)
+                    ...userData
                 })
             });
 
@@ -284,13 +285,14 @@ const UserPage = () => {
     const handleUpdateUser = async (data) => {
         try {
             const response = await fetch(`${userUrl}`, {
-                method: 'POST',
+                method: 'PUT',
                 headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
                     "X-User-Email": appUser.email,
                 },
                 body: JSON.stringify({
-                    ...data,
-                    roleId: parseInt(data.roleId)
+                    ...data
                 })
             });
 
@@ -378,7 +380,10 @@ const UserPage = () => {
 
                 {/* Delete Confirmation Modal */}
                 {deleteConfirmId && (
-                    <DeleteDialog deleteConfirmId={deleteConfirmId} setDeleteConfirmId={setDeleteConfirmId} confirmDelete={confirmDelete} />
+                    <DeleteDialog deleteConfirmId={deleteConfirmId} 
+                    setDeleteConfirmId={setDeleteConfirmId} 
+                    confirmDelete={confirmDelete} 
+                    name='user' />
                 )}
 
                 {/* Users Table */}

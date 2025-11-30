@@ -50,6 +50,7 @@ import PrescriberPage from '../prescribers/PrescriberPage';
 import AuthLogPage from '../authlogs/AuthLogPage';
 import InsuranceCompanyWithPlansPage from '../insurances/InsuranceCompanyWithPlansPage';
 import PatientInsurancePage from '../patients/PatientInsurancePage';
+import WorkflowPanel from '../workflow/WorkflowPanel';
 
 export default function Dashboard() {
   const { user, appUser, isAuthenticated, isLoading, stationName, login, logout } = useUser();
@@ -62,6 +63,7 @@ export default function Dashboard() {
 
   const menuItems = [
     { id: 'dashboard', path: '/', icon: LayoutDashboard, label: 'Dashboard' },
+    { id: 'workflow', path: '/workflow', icon: TriangleAlert, label: 'Workflow' },
     { id: 'prescriber', path: '/prescriber', icon: TriangleAlert, label: 'Prescriber' },
     { id: 'insurances', path: '/insurances', icon: TriangleAlert, label: 'Insurances' },
     { id: 'patients', path: '/patients', icon: TriangleAlert, label: 'Patients' },
@@ -107,7 +109,8 @@ export default function Dashboard() {
           <Route path="/prescriber" element={<PrescriberPage />} />
             <Route path="/insurances" element={<InsuranceCompanyWithPlansPage />} />
             <Route path="/patients" element={<PatientInsurancePage />} />
-  
+            <Route path="/workflow" element={<WorkflowPanel />} />
+
             {/* <Route path="/inventory" element={<InventoryWorkflow />} />
             <Route path="/claims" element={<ClaimFlow />} />
             <Route path="/users" element={<UserPage />} />

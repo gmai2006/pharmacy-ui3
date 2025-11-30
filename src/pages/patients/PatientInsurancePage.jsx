@@ -44,12 +44,20 @@ export default function PatientInsurancePage() {
         lastName: "",
         dob: "",
         gender: "",
-        contact: {},
         mrn: "",
         preferredLanguage: "",
         isStudentRecord: false,
+
+        contactAddress: "",
+        contactCity: "",
+        contactState: "",
+        contactCountry: "",
+        contactPhone: "",
+
+        contact: {},     // final JSON object
         insurances: []
     };
+
 
     const [formData, setFormData] = useState(initialForm);
     const [insuranceRows, setInsuranceRows] = useState([]);
@@ -140,10 +148,18 @@ export default function PatientInsurancePage() {
             .then(res => {
                 const full = res.data;
                 setEditingPatient(full);
+                const c = full.contact || {};
+
                 setFormData({
                     ...full,
                     dob: full.dob || "",
+                    contactAddress: c.address || "",
+                    contactCity: c.city || "",
+                    contactState: c.state || "",
+                    contactCountry: c.country || "",
+                    contactPhone: c.phone || "",
                 });
+
                 setInsuranceRows(full.insurances || []);
                 setShowForm(true);
             })
@@ -202,8 +218,16 @@ export default function PatientInsurancePage() {
 
         const payload = {
             ...formData,
+            contact: {
+                address: formData.contactAddress,
+                city: formData.contactCity,
+                state: formData.contactState,
+                country: formData.contactCountry,
+                phone: formData.contactPhone
+            },
             insurances: insuranceRows
         };
+
 
         let req;
         if (editingPatient) {
@@ -334,7 +358,7 @@ export default function PatientInsurancePage() {
                         <div className="p-10 text-center text-gray-500">No patients found.</div>
                     ) : (
                         <table className="w-full">
-                                <thead className="bg-gray-100 border-b border-gray-200">
+                            <thead className="bg-gray-100 border-b border-gray-200">
                                 <tr>
                                     <th className="p-4 text-left text-sm font-semibold">Name</th>
                                     <th className="p-4 text-left text-sm font-semibold">MRN</th>
@@ -529,6 +553,96 @@ export default function PatientInsurancePage() {
                                         value={formData.mrn || ""}
                                         onChange={(e) => setFormData({ ...formData, mrn: e.target.value })}
                                     />
+                                </div>
+
+                                {/* Contact Information */}
+                                <div className="border p-4 rounded bg-gray-50">
+                                    <h3 className="font-semibold mb-3 text-indigo-700">Patient Contact Information</h3>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                                        <div>
+                                            <label className="text-sm font-medium">Address</label>
+                                            <input
+                                                type="text"
+                                                className="w-full p-2 border rounded"
+                                                value={formData.contactAddress}
+                                                onChange={(e) =>
+                                                    setFormData({ ...formData, contactAddress: e.target.value })
+                                                }
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="text-sm font-medium">City</label>
+                                            <input
+                                                type="text"
+                                                className="w-full p-2 border rounded"
+                                                value={formData.contactCity}
+                                                onChange={(e) =>
+                                                    setFormData({ ...formData, contactCity: e.target.value })
+                                                }
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="text-sm font-medium">State</label>
+                                            <select
+                                                className="w-full p-2 border rounded"
+                                                value={formData.contactState}
+                                                onChange={(e) =>
+                                                    setFormData({ ...formData, contactState: e.target.value })
+                                                }
+                                            >
+                                                <option value="">Select State</option>
+                                                {[
+                                                    "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA",
+                                                    "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
+                                                    "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
+                                                    "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
+                                                    "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"
+                                                ].map((s) => (
+                                                    <option key={s} value={s}>{s}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        <div>
+                                            <label className="text-sm font-medium">Country</label>
+                                            <input
+                                                type="text"
+                                                className="w-full p-2 border rounded"
+                                                value={formData.contactCountry}
+                                                onChange={(e) =>
+                                                    setFormData({ ...formData, contactCountry: e.target.value })
+                                                }
+                                            />
+                                        </div>
+
+                                        <div className="md:col-span-2">
+                                            <label className="text-sm font-medium">Phone</label>
+                                            <input
+                                                type="text"
+                                                className="w-full p-2 border rounded"
+                                                value={formData.contactPhone}
+                                                onChange={(e) =>
+                                                    setFormData({ ...formData, contactPhone: e.target.value })
+                                                }
+                                            />
+                                        </div>
+
+                                        <div className="md:col-span-2 flex items-center gap-2 mt-2">
+                                            <input
+                                                type="checkbox"
+                                                checked={formData.isStudentRecord}
+                                                onChange={(e) =>
+                                                    setFormData({ ...formData, isStudentRecord: e.target.checked })
+                                                }
+                                            />
+                                            <label className="text-sm font-medium">Is Student?</label>
+                                        </div>
+
+                                    </div>
                                 </div>
 
                                 {/* Insurances section */}

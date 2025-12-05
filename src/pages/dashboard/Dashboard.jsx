@@ -8,23 +8,11 @@ import {
 } from "react-router-dom";
 
 import {
-  LayoutDashboard, Users, Package, BarChart3, Settings,
-  Bell, Search, Menu, X, ChevronRight,
+  LayoutDashboard, 
   TriangleAlert,
-  DollarSign,
   Computer
 } from 'lucide-react';
 
-// import PharmacyWorkflow from '../prescription/PharmacyFlow';
-// import PharmacyFinancialReports from '../report/PharmacyFinancialReports';
-
-// import PatientPage from '../patient/PatientPage';
-// import AlertPage from '../alert/AlertPage';
-// import PharmacistPage from '../PharmacistPage';
-
-// import AuthLogViewer from '../report/AuthLogViewer';
-// import AdminAuthDashboard from '../report/AdminAuthDashboard';
-// import DirMarginDashboard from '../report/DIRMarginDashboard';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { useUser } from "../../context/UserContext";
 
@@ -32,25 +20,22 @@ import '../../index.css';
 import '../../App.css';
 import DashboardSidebar from './DashboardSidebar';
 import DashboardHeader from './DashboardHeader';
-// import InventoryWorkflow from '../inventory/InventoryFlow';
-// import ClaimFlow from '../claim/ClaimFlow';
-// import ContactLogTestPage from '../prescription/TestPrescriptionLog';
-
-import OktaLoginModal from '../../components/OktaLogin';
-import SilentLogin from '../../components/SilientLogin';
 
 import DeviceFingerprintPage from '../devices/DeviceFingerprintPage';
-import PrescriberManagement from '../prescribers/PrescriberPage';
-import PatientWithInsurancePage from '../patients/PatientWithInsurancePage';
-import InsurancePlanManagement from '../insurances/InsurancePlanManagement';
-import WorkflowDashboard from '../prescriptions/WorkflowDashboard';
 import UserPage from '../users/UserPage';
 import StationPage from '../stations/StationPage';
 import PrescriberPage from '../prescribers/PrescriberPage';
 import AuthLogPage from '../authlogs/AuthLogPage';
 import InsuranceCompanyWithPlansPage from '../insurances/InsuranceCompanyWithPlansPage';
 import PatientInsurancePage from '../patients/PatientInsurancePage';
-import WorkflowPanel from '../workflow/WorkflowPanel';
+
+import PrescriptionListPage from '../prescriptions/PrescriptionListPage';
+import PrescriptionDetailPage from '../prescriptions/PrescriptionDetailPage';
+import WorkflowQueuePage from '../prescriptions/WorkflowQueuePage';
+import FillQueuePage from '../prescriptions/FillQueuePage';
+import PrescriptionDashboard from '../prescriptions2/PrescriptionDashboard';
+import RolePage from '../roles/RolePage';
+
 
 export default function Dashboard() {
   const { user, appUser, isAuthenticated, isLoading, stationName, login, logout } = useUser();
@@ -64,6 +49,9 @@ export default function Dashboard() {
   const menuItems = [
     { id: 'dashboard', path: '/', icon: LayoutDashboard, label: 'Dashboard' },
     { id: 'workflow', path: '/workflow', icon: TriangleAlert, label: 'Workflow' },
+    { id: 'queue', path: '/queue', icon: TriangleAlert, label: 'Workflow Queue' },
+    { id: 'fill', path: '/fill', icon: TriangleAlert, label: 'Workflow Fill Queue' },
+  
     { id: 'prescriber', path: '/prescriber', icon: TriangleAlert, label: 'Prescriber' },
     { id: 'insurances', path: '/insurances', icon: TriangleAlert, label: 'Insurances' },
     { id: 'patients', path: '/patients', icon: TriangleAlert, label: 'Patients' },
@@ -79,6 +67,7 @@ export default function Dashboard() {
     // { id: 'systemlogs', path: '/systemlogs', icon: TriangleAlert, label: 'Auth Dashboard' },
     // { id: 'settings', path: '/settings', icon: Settings, label: 'Settings' },
     // { id: 'prescriptonlog', path: '/testprescrptionlog', icon: Settings, label: 'testprescrptionlog' },
+    { id: 'roles', path: '/roles', icon: TriangleAlert, label: 'Roles' },
     { id: 'users', path: '/users', icon: Computer, label: 'Users' },
     { id: 'stations', path: '/stations', icon: Computer, label: 'Stations' },
     { id: 'devices', path: '/devices', icon: Computer, label: 'devices' },
@@ -104,13 +93,15 @@ export default function Dashboard() {
         {/* Routes */}
         <div className="flex-1 overflow-y-auto p-6">
           <Routes>
-            <Route path="/" element={<UserPage />} />
+            <Route path="/" element={<PrescriptionDashboard />} />
             {/* <Route path="/" element={<WorkflowDashboard />} /> */}
           <Route path="/prescriber" element={<PrescriberPage />} />
             <Route path="/insurances" element={<InsuranceCompanyWithPlansPage />} />
             <Route path="/patients" element={<PatientInsurancePage />} />
-            <Route path="/workflow" element={<WorkflowPanel />} />
-
+            <Route path="/workflow" element={<PrescriptionListPage />} />
+            <Route path="/prescriptions/:id" element={<PrescriptionDetailPage />} />
+            <Route path="/queue/" element={<WorkflowQueuePage />} />
+            <Route path="/fill/" element={<FillQueuePage />} />
             {/* <Route path="/inventory" element={<InventoryWorkflow />} />
             <Route path="/claims" element={<ClaimFlow />} />
             <Route path="/users" element={<UserPage />} />
@@ -122,6 +113,7 @@ export default function Dashboard() {
             <Route path="/systemlogs" element={<AdminAuthDashboard />} />
             <Route path="/settings" element={<DirMarginDashboard />} />
             <Route path="/testprescrptionlog" element={<ContactLogTestPage />} /> */}
+            <Route path="/roles" element={<RolePage />} />
             <Route path="/authlogs" element={<AuthLogPage />} />
             <Route path="/users" element={<UserPage />} />
             <Route path="/stations" element={<StationPage />} />

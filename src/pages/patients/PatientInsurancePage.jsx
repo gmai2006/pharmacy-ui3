@@ -142,7 +142,7 @@ export default function PatientInsurancePage() {
 
     const openEditForm = (patient) => {
 
-        axios.get(`/${init.appName}/api/patient-insurances/${patient.id}`, {
+        axios.get(`/${init.appName}/api/patient-insurances/${patient.patientId}`, {
             headers: { "X-User-Email": appUser.email }
         })
             .then(res => {
@@ -176,19 +176,10 @@ export default function PatientInsurancePage() {
             {
                 patientInsuranceId: null,
                 planName: "",
-                insuranceCompany: "",
-                memberId: "",
-                rxGroup: "",
-                relationship: "",
-                cardholderName: "",
-                cardholderDob: "",
-                coverageStart: "",
-                coverageEnd: "",
+                companyName: "",
                 isPrimary: false,
                 isSecondary: false,
                 isTertiary: false,
-                bin: "",
-                pcn: "",
                 groupNumber: ""
             }
         ]);
@@ -256,7 +247,7 @@ export default function PatientInsurancePage() {
     const deletePatient = (patient) => {
         if (!window.confirm("Delete this patient and all insurance records?")) return;
 
-        axios.delete(`/${init.appName}/api/patient-insurances/${patient.id}`, {
+        axios.delete(`/${init.appName}/api/patient-insurances/${patient.patientId}`, {
             headers: { "X-User-Email": appUser.email }
         })
             .then(() => {
@@ -287,7 +278,7 @@ export default function PatientInsurancePage() {
         ];
 
         const rows = patients.map((p) => [
-            p.id || "",
+            p.patientId || "",
             p.mrn || "",
             p.firstName || "",
             p.lastName || "",
@@ -682,7 +673,7 @@ export default function PatientInsurancePage() {
                                                         <input
                                                             type="text"
                                                             className="w-full p-2 border rounded"
-                                                            value={row.insuranceCompany || ""}
+                                                            value={row.companyName || ""}
                                                             onChange={(e) =>
                                                                 updateInsuranceRow(idx, "insuranceCompany", e.target.value)
                                                             }

@@ -82,7 +82,7 @@ const UserPage = () => {
 
     useEffect(() => {
         getRoles();
-    });
+    }, []);
 
     useEffect(() => {
         fetchUsers();

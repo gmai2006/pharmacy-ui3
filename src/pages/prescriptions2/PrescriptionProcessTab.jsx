@@ -26,10 +26,10 @@ const EXTRA_TASKS = {
 };
 
 
-const headers = {
-    "Content-Type": "application/json",
-    Accept: "application/json",
-};
+// const headers = {
+//     "Content-Type": "application/json",
+//     Accept: "application/json",
+// };
 
 const PrescriptionProcessTab = () => {
     const { appUser } = useUser();
@@ -37,7 +37,7 @@ const PrescriptionProcessTab = () => {
     const [notification, setNotification] = useState(null);
     const [queue, setQueue] = useState([]);
 
-    const [prescriptions, setPrescriptions] = useState([]); // now from VPrescriptionAggregate
+    const [prescriptions, setPrescriptions] = useState([]);
     const [filterQueue, setFilterQueue] = useState("");
     const [steps, setSteps] = useState([]);
     const [transitions, setTransitions] = useState([]);
@@ -72,7 +72,7 @@ const PrescriptionProcessTab = () => {
     const loadWorkflowSteps = async () => {
         const res = await axios.get(
             `/${init.appName}/api/workflow-steps/`,
-             { headers: { "X-User-Email": appUser.email } }
+            { headers: { "X-User-Email": appUser.email } }
         );
         setSteps(res.data?.content || []);
     };
@@ -91,8 +91,23 @@ const PrescriptionProcessTab = () => {
             { headers: { "X-User-Email": appUser.email } }
         );
         setPrescriptions(res.data || []);
-        const queues = res.data.map(d => d.activeQueueName);
+        const queues = [...new Set(res.data.map(d => d.activeQueueName))];
         setQueue(queues);
+    };
+
+    const goToNextStep = async (prescriptionId, fromStep, toStep) => {
+        console.log(`goto next step ${fromStep}`);
+        try {
+            const res = await axios.post(
+                `/${init.appName}/api/workflow/transition/`,
+                {prescriptionId: prescriptionId, fromStep: fromStep, toStep: toStep},
+                { headers: { "X-User-Email": appUser.email } }
+            );
+            console.log(res.status);
+            console.log(`successfully move to next step ${fromStep}`);
+        } catch (error) {
+            console.log(error);
+        }
     };
 
     useEffect(() => {
@@ -165,16 +180,9 @@ const PrescriptionProcessTab = () => {
         }
 
         try {
-            
-            showNotification(`Moved to ${step}`);
-            item.currentStep = step;
 
-            /**
-             * Update the current prescription (step, status, queu) save
-             * Update the current prescription queue
-             * Insert a new log
-             * 
-             * */
+            showNotification(`Moved to ${step}`);
+            await goToNextStep(item.prescriptionId, item.currentStep, step);
 
             // Refresh
             await loadPrescriptionSummary();
@@ -254,10 +262,10 @@ const PrescriptionProcessTab = () => {
                                     {rx?.name} {rx?.strength}
                                 </div>
                             </div>
-                             <div>
-                                    <div className="text-xs text-gray-500 mb-1">Copay</div>
-                                    <div className="text-sm text-gray-700">${rx.copay || 0}</div>
-                                </div>
+                            <div>
+                                <div className="text-xs text-gray-500 mb-1">Copay</div>
+                                <div className="text-sm text-gray-700">${rx.copay || 0}</div>
+                            </div>
                             <div>
                                 <div className="text-xs text-gray-500 mb-1">SIG</div>
                                 <div className="font-medium">{rx?.sig}</div>
@@ -295,7 +303,7 @@ const PrescriptionProcessTab = () => {
         );
     };
 
-    const NextStepComponent = ({item}) => {
+    const NextStepComponent = ({ item }) => {
         const transition = transitions.find(t => t.fromStep === item.currentStep);
         if (!transition) {
             showNotification("No transition available.", "error");
@@ -303,15 +311,16 @@ const PrescriptionProcessTab = () => {
         }
         filteredToSteps = transition.toSteps.filter(step => step !== item.currentStep);
         filteredToSteps.map(step => {
-             return (
-             <button
-                key={step}
-                onClick={() => moveToNextStep(item)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm"
-            >
-                Move to {step}
-            </button>
-             )}
+            return (
+                <button
+                    key={step}
+                    onClick={() => moveToNextStep(item)}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm"
+                >
+                    Move to {step}
+                </button>
+            )
+        }
         );
     }
 
@@ -335,9 +344,9 @@ const PrescriptionProcessTab = () => {
                     filteredPrescriptions.map(item => {
                         const tasks = EXTRA_TASKS[item.currentStep] || [];
                         const transition = transitions.find(t => t.fromStep === item.currentStep);
-                        
+
                         const toSteps = transition.toSteps.filter(step => step != item.currentStep) || [];
-                        console.log(toSteps);
+                        // console.log(toSteps);
                         return (
                             <div
                                 key={item.prescriptionId}
@@ -348,10 +357,10 @@ const PrescriptionProcessTab = () => {
                                         {getPriorityIcon(item.priority)}
                                         <div>
                                             <div className={`px-2 py-1 rounded text-xs font-medium border ${getWorkflowStepColor(item.currentStep)}`}>
-                                            {item.currentStep}
+                                                {item.currentStep.replace(`_`, ` `)}
                                             </div>
                                             <div className="text-xs text-gray-500">
-                                            Status: {item.currentStatus}
+                                                Status: {item.currentStatus.replace(`_`, ` `)}
                                             </div>
                                         </div>
                                     </div>
@@ -413,15 +422,16 @@ const PrescriptionProcessTab = () => {
                                     {/* Workflow Transition Button */}
                                     {toSteps.map(step => {
                                         return (
-                                        <button
-                                            key={step}
-                                            onClick={() => moveToNextStep(item, step)}
-                                            className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${getNextWorkflowStepColor(step)}`}
-                                        >
-                                            Move To {step}
-                                        </button>
+                                            <button
+                                                key={step}
+                                                onClick={() => moveToNextStep(item, step)}
+                                                className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${getNextWorkflowStepColor(step)}`}
+                                            >
+                                                Move To {step.replace(`_`, ` `)}
+                                            </button>
 
-                                    )})}
+                                        )
+                                    })}
                                 </div>
                             </div>
                         )

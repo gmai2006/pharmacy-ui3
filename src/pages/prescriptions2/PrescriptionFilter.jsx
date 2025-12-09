@@ -20,7 +20,7 @@ const PrescriptionFilter = ({data, filterList, filterStatus, setFilterStatus}) =
                                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filterStatus === queue ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                         }`}
                                 >
-                                    {queue} ({data.filter(pre => pre.activeQueueName === queue).length})
+                                    {queue.replace(`_`, ` `)} ({data.filter(pre => pre.activeQueueName === queue).length})
                                 </button>
                             )
                         ))

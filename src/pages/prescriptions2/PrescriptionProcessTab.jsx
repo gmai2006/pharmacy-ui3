@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import init from "../../init";
 import PrescriptionFilter from "./PrescriptionFilter";
@@ -6,7 +6,8 @@ import Notification from "../../components/Notification";
 import BarcodePreviewDialog from "../../components/BarcodePreviewDialog";
 import ContactPrescriberDialog from "./ContactPrescriberDialog";
 import { useUser } from "../../context/UserContext";
-import { AlertCircle, Clock } from "lucide-react";
+import { AlertCircle, CheckCircle, Clock, Package } from "lucide-react";
+import { getErrorMessage, convertStrToCamelCase } from '../../utils/util';
 
 /**
  * TASKS PER WORKFLOW STEP
@@ -26,11 +27,6 @@ const EXTRA_TASKS = {
 };
 
 
-// const headers = {
-//     "Content-Type": "application/json",
-//     Accept: "application/json",
-// };
-
 const PrescriptionProcessTab = () => {
     const { appUser } = useUser();
 
@@ -38,8 +34,9 @@ const PrescriptionProcessTab = () => {
     const [queue, setQueue] = useState([]);
 
     const [prescriptions, setPrescriptions] = useState([]);
+    const [filteredPrescriptions, setFilteredPrescriptions] = useState([]);
     const [filterQueue, setFilterQueue] = useState("");
-    const [steps, setSteps] = useState([]);
+    const steps = useRef([]);
     const [transitions, setTransitions] = useState([]);
     // Dialogs
     const [barcodeDialog, setBarcodeDialog] = useState({
@@ -74,7 +71,7 @@ const PrescriptionProcessTab = () => {
             `/${init.appName}/api/workflow-steps/`,
             { headers: { "X-User-Email": appUser.email } }
         );
-        setSteps(res.data?.content || []);
+        steps.current = res.data?.content || [];
     };
 
     const loadTransitions = async () => {
@@ -93,38 +90,71 @@ const PrescriptionProcessTab = () => {
         setPrescriptions(res.data || []);
         const queues = [...new Set(res.data.map(d => d.activeQueueName))];
         setQueue(queues);
+        setFilterQueue('');
+        setFilteredPrescriptions(res.data || []);
     };
 
-    const goToNextStep = async (prescriptionId, fromStep, toStep) => {
-        console.log(`goto next step ${fromStep}`);
+    const updateQueueAndFilter = (queue) => {
+        setFilterQueue(queue);
+        const filtered = prescriptions.filter((rx) =>
+            !queue
+                ? true
+                : rx.activeQueueName === queue);
+        setFilteredPrescriptions(filtered);
+    }
+
+    const goToNextStep = async (item, toStep) => {
+        const transition = transitions.find(t => t.toStep === item.toStep);
+        if (!transition) {
+            showNotification("No transition available.", "error");
+            return;
+        }
+        console.log(`goto next step ${toStep}`);
         try {
             const res = await axios.post(
                 `/${init.appName}/api/workflow/transition/`,
-                {prescriptionId: prescriptionId, fromStep: fromStep, toStep: toStep},
+                { prescriptionId: item.prescriptionId, fromStep: item.currentStep, toStep: toStep, userAgent: navigator.userAgent },
                 { headers: { "X-User-Email": appUser.email } }
             );
-            console.log(res.status);
-            console.log(`successfully move to next step ${fromStep}`);
+            await loadPrescriptionSummary();
+            console.log(`successfully move to next step ${item.currentStep}`);
+            showNotification(`Moved to ${toStep}`, 'success');
         } catch (error) {
-            console.log(error);
+            if (error.response) {
+                const errorMesage = getErrorMessage(error);
+                console.error('Error update prescription:', errorMesage);
+                showNotification(errorMesage, 'error');
+            } else if (error.request) {
+                // The request was made but NO response was received
+                // This usually means a Network Error (connectivity issues, firewall, API down)
+                console.log(error.request);
+                showNotification('Network error. Please check your internet connection.', 'error');
+
+            } else {
+                // Something happened in setting up the request that triggered an Error
+                console.log('Error', error.message);
+                showNotification('An unexpected error occurred.', 'error');
+            }
         }
     };
 
     useEffect(() => {
-        (async () => {
-            await loadWorkflowSteps();
-            await loadTransitions();
-            await loadPrescriptionSummary();
-        })();
+        console.log(`loading steps and transitions...`);
+        loadWorkflowSteps();
+        loadTransitions();
+    }, []);
+
+    useEffect(() => {
+        loadPrescriptionSummary();
     }, [appUser]);
 
-    // -------------------------
-    // FILTERED VIEW (by queue name)
-    // -------------------------
-    const filteredPrescriptions = prescriptions.filter((rx) =>
-        !filterQueue
-            ? true
-            : rx.activeQueueName === filterQueue);
+    // // -------------------------
+    // // FILTERED VIEW (by queue name)
+    // // -------------------------
+    // const filteredPrescriptions = prescriptions.filter((rx) =>
+    //     !filterQueue
+    //         ? true
+    //         : rx.activeQueueName === filterQueue);
 
 
     // -------------------------
@@ -168,29 +198,6 @@ const PrescriptionProcessTab = () => {
         });
     };
 
-    // -------------------------
-    // WORKFLOW ACTIONS
-    // -------------------------
-
-    const moveToNextStep = async (item, step) => {
-        const transition = transitions.find(t => t.fromStep === item.currentStep);
-        if (!transition) {
-            showNotification("No transition available.", "error");
-            return;
-        }
-
-        try {
-
-            showNotification(`Moved to ${step}`);
-            await goToNextStep(item.prescriptionId, item.currentStep, step);
-
-            // Refresh
-            await loadPrescriptionSummary();
-        } catch (err) {
-            console.error(err);
-            showNotification("Transition failed.", "error");
-        }
-    };
 
     const runTask = (item, task) => {
         switch (task.code) {
@@ -303,27 +310,6 @@ const PrescriptionProcessTab = () => {
         );
     };
 
-    const NextStepComponent = ({ item }) => {
-        const transition = transitions.find(t => t.fromStep === item.currentStep);
-        if (!transition) {
-            showNotification("No transition available.", "error");
-            return;
-        }
-        filteredToSteps = transition.toSteps.filter(step => step !== item.currentStep);
-        filteredToSteps.map(step => {
-            return (
-                <button
-                    key={step}
-                    onClick={() => moveToNextStep(item)}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm"
-                >
-                    Move to {step}
-                </button>
-            )
-        }
-        );
-    }
-
     // -------------------------
     // UI RENDER
     // -------------------------
@@ -336,17 +322,15 @@ const PrescriptionProcessTab = () => {
                 data={prescriptions}
                 filterList={queue}
                 filterStatus={filterQueue}
-                setFilterStatus={setFilterQueue}
+                setFilterStatus={updateQueueAndFilter}
             />}
 
-            <div className="grid gap-4 mt-4">
+            {filteredPrescriptions.length > 0 && transitions.length > 0 && <div className="grid gap-4 mt-4">
                 {
                     filteredPrescriptions.map(item => {
                         const tasks = EXTRA_TASKS[item.currentStep] || [];
                         const transition = transitions.find(t => t.fromStep === item.currentStep);
-
-                        const toSteps = transition.toSteps.filter(step => step != item.currentStep) || [];
-                        // console.log(toSteps);
+                        const toSteps = transition?.toSteps.filter(step => step != item.currentStep) || [];
                         return (
                             <div
                                 key={item.prescriptionId}
@@ -424,10 +408,10 @@ const PrescriptionProcessTab = () => {
                                         return (
                                             <button
                                                 key={step}
-                                                onClick={() => moveToNextStep(item, step)}
+                                                onClick={() => goToNextStep(item, step)}
                                                 className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${getNextWorkflowStepColor(step)}`}
                                             >
-                                                Move To {step.replace(`_`, ` `)}
+                                                {convertStrToCamelCase(step)}
                                             </button>
 
                                         )
@@ -438,6 +422,7 @@ const PrescriptionProcessTab = () => {
                     }
                     )}
             </div>
+            }
 
             {/* Dialogs */}
             <BarcodePreviewDialog

@@ -61,26 +61,6 @@ const createAuthlog = async (appUser, eventType, status, error) => {
   });
 }
 
-
-
-//   const ip = await getMyIPSafe();
-//   return {
-//     "userId": userId,
-//     "username": username,
-//     "eventType": eventType,
-//     "status": status,
-//     "ipAddress": ip,
-//     "userAgent": navigator.userAgent,
-//     "metadata": {
-//       "os": "iOS",
-//       "reason": status,
-//       "browser": DeviceFingerprintService.getBrowserVendor(),
-//       "device_type": navigator.userAgentData.platform,
-//       "eror": error
-//     },
-//   }
-// }
-
 // Handle add a new station
 const registerDevice = async (data) => {
   try {
@@ -122,6 +102,7 @@ export function UserContextProvider({ children }) {
   const [appUser, setAppUser] = useState(undefined);
   const [error, setError] = useState(undefined);
   const [stationName, setStationName] = useState(`Not Found`);
+  
   const initializeStation = async () => {
     try {
 

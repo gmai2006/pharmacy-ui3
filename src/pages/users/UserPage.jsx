@@ -7,6 +7,7 @@ import Notification from '../../components/Notification';
 import UserDialog from './UserDialog';
 import { useUser } from "../../context/UserContext";
 import DeleteDialog from '../../components/DeleteDialog';
+import { getErrorMessage } from '../../utils/util';
 
 const headers = {
     'Content-Type': 'application/json',
@@ -47,14 +48,15 @@ const UserPage = () => {
                     "X-User-Email": appUser.email,
                 },
             });
-            if (!response.ok) throw new Error('Failed to fetch users');
+            if (!response.ok) throw new Error('Failed to fetch roles');
             const jsonData = await response.json();
-            const userRoles = jsonData.toSorted((a, b) => a.roleName - b.roleName);
+            const userRoles = jsonData.content.toSorted((a, b) => a.roleName - b.roleName);
             roles.current = userRoles;
             console.log('Roles fetched:', userRoles);
         } catch (error) {
-            console.error('Error fetching data:', error);
-            showNotification('Failed to load users', 'error');
+            const errorMesage = getErrorMessage(error);
+            console.error('Error fetching data:', errorMesage);
+            showNotification('Failed to load users', errorMesage);
         } finally {
 
         }
@@ -63,21 +65,25 @@ const UserPage = () => {
     // ============================================================
     // FETCH USERS
     // ============================================================
-    const fetchUsers = () => {
+    const fetchUsers = async () => {
         if (!appUser?.email) return;
+        try {
+                const response = await fetch(`/${init.appName}/api/users-with-roles`, {
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-User-Email": appUser.email,
+                    },
+                })
+                if (!response.ok) throw new Error('Failed to fetch users');
+                const jsonData = await response.json();
+                setUsers(jsonData);
+        } catch (error) {
+            const errorMesage = getErrorMessage(error);
+            console.error('Error fetching data:', errorMesage);
+            showNotification('Failed to load users', errorMesage);
+        } finally {
 
-        fetch(`/${init.appName}/api/users-with-roles`, {
-            headers: {
-                "Content-Type": "application/json",
-                "X-User-Email": appUser.email,
-            },
-        })
-            .then((r) => {
-                if (!r.ok) throw new Error("Failed to fetch users");
-                return r.json();
-            })
-            .then(setUsers)
-            .catch(() => notify("error", "Failed to load users."));
+        }        
     };
 
     useEffect(() => {
@@ -209,18 +215,6 @@ const UserPage = () => {
     const handleItemsPerPageChange = (e) => {
         setItemsPerPage(parseInt(e.target.value));
         setCurrentPage(1);
-    };
-
-    const formatDate = (timestamp) => {
-        if (!timestamp) return '';
-        const date = new Date(timestamp * 1000);
-        return date.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-        });
     };
 
     // Handle delete user
@@ -380,10 +374,10 @@ const UserPage = () => {
 
                 {/* Delete Confirmation Modal */}
                 {deleteConfirmId && (
-                    <DeleteDialog deleteConfirmId={deleteConfirmId} 
-                    setDeleteConfirmId={setDeleteConfirmId} 
-                    confirmDelete={confirmDelete} 
-                    name='user' />
+                    <DeleteDialog deleteConfirmId={deleteConfirmId}
+                        setDeleteConfirmId={setDeleteConfirmId}
+                        confirmDelete={confirmDelete}
+                        name='user' />
                 )}
 
                 {/* Users Table */}

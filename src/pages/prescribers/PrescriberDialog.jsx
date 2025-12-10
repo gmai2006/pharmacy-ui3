@@ -1,14 +1,15 @@
 // PrescriberDialog.jsx
 import React, { useEffect, useState } from "react";
 import { X } from "lucide-react";
+import {US_STATES} from '../../utils/util';
 
-const US_STATES = [
-  "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA",
-  "HI","ID","IL","IN","IA","KS","KY","LA","ME","MD",
-  "MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ",
-  "NM","NY","NC","ND","OH","OK","OR","PA","RI","SC",
-  "SD","TN","TX","UT","VT","VA","WA","WV","WI","WY"
-];
+// const US_STATES = [
+//   "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA",
+//   "HI","ID","IL","IN","IA","KS","KY","LA","ME","MD",
+//   "MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ",
+//   "NM","NY","NC","ND","OH","OK","OR","PA","RI","SC",
+//   "SD","TN","TX","UT","VT","VA","WA","WV","WI","WY"
+// ];
 
 // Validation Patterns
 const NPI_REGEX = /^[0-9]{10}$/;

@@ -3,7 +3,7 @@ import { Bell, CheckCircle, XCircle, User, Pill, Clock, CreditCard, DollarSign, 
 import axios from "axios";
 import { useUser } from "../../context/UserContext";
 import init from "../../init";
-import { IN_REVIEW, READY_TO_FILL, AWAITING_PICKUP, COMPLETED } from '../../utils/util';
+import { IN_REVIEW, READY_TO_FILL, AWAITING_PICKUP, COMPLETED, convertDateArrayToDate } from '../../utils/util';
 
 export default function POSPage() {
   const [activeStation, setActiveStation] = useState('station-1');
@@ -19,19 +19,19 @@ export default function POSPage() {
   const [lastTransaction, setLastTransaction] = useState(null);
   const [discount, setDiscount] = useState(0);
   const [transactionHistory, setTransactionHistory] = useState([]);
-  
+
   // Signature State
   const canvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [signatures, setSignatures] = useState({});
 
-   const loadPrescriptionSummary = async () => {
-        const res = await axios.get(
-            `/${init.appName}/api/prescription-aggregate?max=200`,
-            { headers: { "X-User-Email": appUser.email } }
-        );
-        setPrescriptions(res.data || []);
-    };
+  const loadPrescriptionSummary = async () => {
+    const res = await axios.get(
+      `/${init.appName}/api/prescription-aggregate?max=200`,
+      { headers: { "X-User-Email": appUser.email } }
+    );
+    setPrescriptions(res.data || []);
+  };
 
 
   // POS Functions
@@ -55,7 +55,7 @@ export default function POSPage() {
   };
 
   const updatePrescriptionStatus = (id, newStatus) => {
-    setPrescriptions(prescriptions.map(rx => 
+    setPrescriptions(prescriptions.map(rx =>
       rx.mrn === id ? { ...rx, currentStatus: newStatus } : rx
     ));
   };
@@ -72,7 +72,7 @@ export default function POSPage() {
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    
+
     const ctx = canvas.getContext('2d');
     ctx.beginPath();
     ctx.moveTo(x, y);
@@ -81,13 +81,13 @@ export default function POSPage() {
 
   const draw = (e) => {
     if (!isDrawing) return;
-    
+
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    
+
     const ctx = canvas.getContext('2d');
     ctx.lineTo(x, y);
     ctx.strokeStyle = '#000';
@@ -134,11 +134,11 @@ export default function POSPage() {
       station: activeStation,
       signature: signatures[activeStation]
     };
-    
+
     cart.forEach(item => {
       updatePrescriptionStatus(item.id, 'completed');
     });
-    
+
     setTransactionHistory([transaction, ...transactionHistory]);
     setLastTransaction(transaction);
     setShowPaymentModal(false);
@@ -147,9 +147,9 @@ export default function POSPage() {
     setDiscount(0);
   };
 
-   useEffect(() => {
-          loadPrescriptionSummary();
-      }, [appUser]);
+  useEffect(() => {
+    loadPrescriptionSummary();
+  }, [appUser]);
 
   const printReceipt = () => {
     alert('Receipt sent to printer!');
@@ -157,7 +157,7 @@ export default function POSPage() {
   };
 
   const getStatusColor = (currentStatus) => {
-    switch(currentStatus) {
+    switch (currentStatus) {
       case AWAITING_PICKUP: return 'bg-green-100 text-green-800';
       case IN_REVIEW: return 'bg-yellow-100 text-yellow-800';
       case READY_TO_FILL: return 'bg-blue-100 text-blue-800';
@@ -167,7 +167,7 @@ export default function POSPage() {
   };
 
   const getStatusIcon = (currentStatus) => {
-    switch(currentStatus) {
+    switch (currentStatus) {
       case AWAITING_PICKUP: return <CheckCircle className="w-4 h-4" />;
       case READY_TO_FILL: return <Package className="w-4 h-4" />;
       case COMPLETED: return <CheckCircle className="w-4 h-4" />;
@@ -177,7 +177,7 @@ export default function POSPage() {
 
   const filteredPrescriptions = prescriptions.filter(rx => {
     const matchesSearch = rx.patientLastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          rx.patientFirstName.toLowerCase().includes(searchQuery.toLowerCase()); 
+      rx.patientFirstName.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesFilter = filterStatus === 'all' || rx.currentStatus === filterStatus;
     return matchesSearch && matchesFilter;
   });
@@ -197,7 +197,7 @@ export default function POSPage() {
                 <XCircle className="w-6 h-6" />
               </button>
             </div>
-            
+
             <div className="p-6">
               <div className="border-2 border-gray-300 rounded-lg bg-white mb-2">
                 <canvas
@@ -213,7 +213,7 @@ export default function POSPage() {
               </div>
               <p className="text-sm text-gray-600">Please sign above to acknowledge receipt of medications</p>
             </div>
-            
+
             <div className="flex items-center justify-between p-6 border-t bg-gray-50 rounded-b-lg">
               <button onClick={clearSignature} className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors font-medium flex items-center gap-2">
                 <RefreshCw className="w-4 h-4" />
@@ -243,7 +243,7 @@ export default function POSPage() {
                 <XCircle className="w-6 h-6" />
               </button>
             </div>
-            
+
             <div className="p-6 space-y-4">
               <div className="bg-blue-50 p-4 rounded-lg space-y-1">
                 <div className="flex justify-between text-sm">
@@ -279,7 +279,7 @@ export default function POSPage() {
                 </div>
               </div>
             </div>
-            
+
             <div className="flex items-center justify-end gap-3 p-6 border-t bg-gray-50 rounded-b-lg">
               <button onClick={() => setShowPaymentModal(false)} className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors font-medium">
                 Cancel
@@ -303,7 +303,7 @@ export default function POSPage() {
                 <XCircle className="w-6 h-6" />
               </button>
             </div>
-            
+
             <div className="p-6">
               <div className="text-center mb-6">
                 <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-3" />
@@ -363,7 +363,7 @@ export default function POSPage() {
         </div>
       )}
 
-     
+
       {/* Status Summary Bar */}
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 py-3">
@@ -425,42 +425,48 @@ export default function POSPage() {
                     className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="all">All Status</option>
-                    <option value="{AWAITING_PICKUP}">Ready</option>
-                    <option value="{READY_TO_FILL}">Filling</option>
-                    <option value="{in-IN_REVIEW}">In Progress</option>
+                    <option value={AWAITING_PICKUP}>Ready</option>
+                    <option value={READY_TO_FILL}>Filling</option>
+                    <option value={IN_REVIEW}>In Progress</option>
                   </select>
                 </div>
               </div>
-              
+
               <div className="space-y-3 max-h-[650px] overflow-y-auto">
                 {filteredPrescriptions.filter(rx => rx.currentStatus !== COMPLETED).map(rx => (
-                  <div key={rx.mrn} className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-white">
+                  <div key={rx.prescriptionId} className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-white">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
                           <User className="w-4 h-4 text-gray-500" />
                           <h3 className="font-semibold text-gray-900">{rx.patientFirstName} {rx.patientLastName}</h3>
-                          
+
                           <div className="text-xs text-gray-600 bg-gray-50 p-2 rounded">DOB: <strong>{rx.dob}</strong></div>
                           <span className={`px-2 py-0.5 rounded text-xs font-medium flex items-center gap-1 ${getStatusColor(rx.currentStatus)}`}>
                             {getStatusIcon(rx.currentStatus)}
                             {rx.currentStatus.toUpperCase().replace('-', ' ')}
                           </span>
+                          
                         </div>
-                        
-                        <div className="flex items-center gap-2 mb-2">
-                          <Pill className="w-4 h-4 text-gray-500" />
-                          <p className="text-sm text-gray-700 font-medium">{rx.name}</p>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2 text-xs text-gray-600 bg-gray-50 p-2 rounded">
-                          <div>Rx #: <strong>{rx.mrn}</strong></div>
-                          <div>Qty: <strong>{rx.quantity}</strong></div>
-                          <div>Refills: <strong>{rx.refillsRemaining}</strong></div>
-                          <div className="col-span-2">Dr: <strong>{rx.prescriberFirstName} {rx.prescriberLastName}</strong></div>
-                          {rx.dateReady && (
-                            <div className="col-span-2 text-green-600">Ready: <strong>{rx.dateReady}</strong></div>
-                          )}
-                        </div>
+                        <div className="col-span-2">Dr: <strong>{rx.prescriberFirstName} {rx.prescriberLastName}</strong></div>
+                        {rx.items.map(drug => (
+                          <div key={drug.inventoryItemId}>
+                            <div className="flex items-center gap-2 mb-2">
+                              <Pill className="w-4 h-4 text-gray-500" />
+                              <p className="text-sm text-gray-700 font-medium">{drug.name}</p>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 text-xs text-gray-600 bg-gray-50 p-2 rounded">
+                              <div>Rx #: <strong>{drug.inventoryItemId}</strong></div>
+                              <div>Qty: <strong>{drug.quantity}</strong> <strong>{drug.strength}</strong></div>
+                              <div>Refills: <strong>{drug.refillsAllowed}</strong></div>
+                              
+                              {rx.dateReady && (
+                                <div className="col-span-2 text-green-600">Ready: <strong>{rx.dateReady}</strong></div>
+                              )}
+                            </div>
+                          </div>
+                        ))
+                        }
                       </div>
                       <div className="text-right ml-4">
                         <p className="text-xl font-bold text-gray-900">${rx.copay?.toFixed(2) || 0.00}</p>
@@ -495,7 +501,7 @@ export default function POSPage() {
                 <ShoppingCart className="w-5 h-5" />
                 Current Transaction
               </h2>
-              
+
               {cart.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   <ShoppingCart className="w-12 h-12 mx-auto mb-2 text-gray-300" />
@@ -511,11 +517,11 @@ export default function POSPage() {
                           <p className="font-medium text-gray-900 text-sm">{item.patientFirstName} {item.patientLastName}</p>
                           {item.items.map(drug => (
                             <div>
-                            <p className="text-xs text-gray-600">{drug.name}</p>
-                            <p className="text-xs text-gray-500">Rx: {drug.itemId} • Qty: {drug.quantity}</p>
+                              <p className="text-xs text-gray-600">{drug.name}</p>
+                              <p className="text-xs text-gray-500">Rx: {drug.itemId} • Qty: {drug.quantity}</p>
                             </div>
                           ))
-                        }
+                          }
                         </div>
                         <div className="text-right ml-2">
                           <p className="font-bold text-gray-900">${item.copay?.toFixed(2) || 0}</p>
@@ -529,7 +535,7 @@ export default function POSPage() {
                       </div>
                     ))}
                   </div>
-                  
+
                   <div className="border-t pt-4 space-y-3">
                     <div className="flex items-center gap-2">
                       <Percent className="w-4 h-4 text-gray-500" />
@@ -579,7 +585,7 @@ export default function POSPage() {
                       </div>
                       <p className="text-xs text-gray-600">{cart.length} prescription(s)</p>
                     </div>
-                    
+
                     <button
                       onClick={() => setShowSignatureModal(true)}
                       className="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2 shadow-sm"
@@ -597,7 +603,7 @@ export default function POSPage() {
                     >
                       Clear Cart
                     </button>
-                    
+
                     {signatures[activeStation] && (
                       <div className="p-3 bg-green-50 rounded-lg border border-green-200">
                         <p className="text-sm font-medium text-green-800 flex items-center gap-2">

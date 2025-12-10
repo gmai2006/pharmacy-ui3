@@ -15,11 +15,11 @@ const App = () => {
         <OktaLoginModal />
       ) : (
         <div>
-          <UserContextProvider >
+         
             <BrowserRouter>
               <Dashboard />
             </BrowserRouter>
-          </UserContextProvider>
+          
         </div>
       )}
     </>

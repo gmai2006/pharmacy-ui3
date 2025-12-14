@@ -10,7 +10,11 @@ import {
 import {
   LayoutDashboard, 
   TriangleAlert,
-  Computer
+  Computer,
+  ShieldAlert,
+  User,
+  Lock,
+  Phone
 } from 'lucide-react';
 
 import { LoadingSpinner } from '../../components/LoadingSpinner';
@@ -35,6 +39,8 @@ import WorkflowQueuePage from '../prescriptions/WorkflowQueuePage';
 import FillQueuePage from '../prescriptions/FillQueuePage';
 import PrescriptionDashboard from '../prescriptions2/PrescriptionDashboard';
 import RolePage from '../roles/RolePage';
+import ClaimsDashboard from '../claims/ClaimsDashboard.jsx';
+import FaxJobPage from '../fax/FaxJobPage.jsx';
 
 
 export default function Dashboard() {
@@ -48,16 +54,16 @@ export default function Dashboard() {
 
   const menuItems = [
     { id: 'dashboard', path: '/', icon: LayoutDashboard, label: 'Dashboard' },
-    { id: 'workflow', path: '/workflow', icon: TriangleAlert, label: 'Workflow' },
-    { id: 'queue', path: '/queue', icon: TriangleAlert, label: 'Workflow Queue' },
-    { id: 'fill', path: '/fill', icon: TriangleAlert, label: 'Workflow Fill Queue' },
+    // { id: 'workflow', path: '/workflow', icon: TriangleAlert, label: 'Workflow' },
+    // { id: 'queue', path: '/queue', icon: TriangleAlert, label: 'Workflow Queue' },
+    // { id: 'fill', path: '/fill', icon: TriangleAlert, label: 'Workflow Fill Queue' },
   
     { id: 'prescriber', path: '/prescriber', icon: TriangleAlert, label: 'Prescriber' },
     { id: 'insurances', path: '/insurances', icon: TriangleAlert, label: 'Insurances' },
     { id: 'patients', path: '/patients', icon: TriangleAlert, label: 'Patients' },
     { id: 'authlogs', path: '/authlogs', icon: TriangleAlert, label: 'AuthLogs' },
     // { id: 'inventory', path: '/inventory', icon: Users, label: 'Inventory' },
-    // { id: 'claims', path: '/claims', icon: Users, label: 'Claims' },
+    { id: 'claims', path: '/claims', icon: ShieldAlert, label: 'Claims' },
     // { id: 'users', path: '/users', icon: Users, label: 'Users' },
     // { id: 'patients', path: '/patients', icon: Users, label: 'Patients' },
     // { id: 'pharmacist', path: '/pharmacist', icon: Package, label: 'Pharmacists' },
@@ -67,8 +73,9 @@ export default function Dashboard() {
     // { id: 'systemlogs', path: '/systemlogs', icon: TriangleAlert, label: 'Auth Dashboard' },
     // { id: 'settings', path: '/settings', icon: Settings, label: 'Settings' },
     // { id: 'prescriptonlog', path: '/testprescrptionlog', icon: Settings, label: 'testprescrptionlog' },
-    { id: 'roles', path: '/roles', icon: TriangleAlert, label: 'Roles' },
-    { id: 'users', path: '/users', icon: Computer, label: 'Users' },
+    { id: 'roles', path: '/roles', icon: Lock, label: 'Roles' },
+    { id: 'users', path: '/users', icon: User, label: 'Users' },
+    { id: 'faxes', path: '/faxes', icon: Phone, label: 'Faxes' },
     { id: 'stations', path: '/stations', icon: Computer, label: 'Stations' },
     { id: 'devices', path: '/devices', icon: Computer, label: 'devices' },
 ];
@@ -98,15 +105,13 @@ export default function Dashboard() {
           <Route path="/prescriber" element={<PrescriberPage />} />
             <Route path="/insurances" element={<InsuranceCompanyWithPlansPage />} />
             <Route path="/patients" element={<PatientInsurancePage />} />
-            <Route path="/workflow" element={<PrescriptionListPage />} />
+            
             <Route path="/prescriptions/:id" element={<PrescriptionDetailPage />} />
-            <Route path="/queue/" element={<WorkflowQueuePage />} />
-            <Route path="/fill/" element={<FillQueuePage />} />
-            {/* <Route path="/inventory" element={<InventoryWorkflow />} />
-            <Route path="/claims" element={<ClaimFlow />} />
-            <Route path="/users" element={<UserPage />} />
-            <Route path="/patients" element={<PatientPage />} />
-            <Route path="/pharmacist" element={<PharmacistPage />} />
+            
+            {/* <Route path="/inventory" element={<InventoryWorkflow />} /> */}
+            <Route path="/claims" element={<ClaimsDashboard />} />
+
+            {/* <Route path="/pharmacist" element={<PharmacistPage />} />
             <Route path="/alert" element={<AlertPage />} />
             <Route path="/analytics" element={<PharmacyFinancialReports icon={BarChart3} />} />
             <Route path="/logs" element={<AuthLogViewer />} />
@@ -116,6 +121,7 @@ export default function Dashboard() {
             <Route path="/roles" element={<RolePage />} />
             <Route path="/authlogs" element={<AuthLogPage />} />
             <Route path="/users" element={<UserPage />} />
+            <Route path="/faxes" element={<FaxJobPage />} />
             <Route path="/stations" element={<StationPage />} />
             <Route path="/devices" element={<DeviceFingerprintPage />} />
           </Routes>

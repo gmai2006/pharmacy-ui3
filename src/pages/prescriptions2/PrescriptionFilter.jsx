@@ -1,11 +1,11 @@
-import { Filter, List } from "lucide-react";
+import { Filter, List, Truck } from "lucide-react";
 import { AlertCircle, CheckCircle, Clock, Package } from "lucide-react";
 
 const PrescriptionFilter = ({ data, filterList, filterStatus, setFilterStatus }) => {
     const reviewQueues = data.filter(datum => datum.activeQueueName === `PHARMACIST_REVIEW`).length;
     const fillQueues = data.filter(datum => datum.activeQueueName === `FILL`).length;
     const readyQueues = data.filter(datum => datum.activeQueueName === `PICKUP`).length;
-
+    const deliverQueues = data.filter(datum => datum.activeQueueName === `DELIVERY`).length;
     return (
         <div>
     
@@ -53,6 +53,17 @@ const PrescriptionFilter = ({ data, filterList, filterStatus, setFilterStatus })
                                     onClick={() => setFilterStatus('PICKUP')}
                                 >
                                     Pick up ({readyQueues})
+                                </button>
+                            </div>
+                        </div>}
+
+                        {deliverQueues > 0 && <div className="flex items-center gap-2 px-4 py-2 bg-green-50 rounded-lg border border-green-200 hover:bg-green-200">
+                            <Truck className="w-5 h-5 text-green-600" />
+                            <div>
+                                <button
+                                    onClick={() => setFilterStatus('DELIVERY')}
+                                >
+                                    Delivery ({readyQueues})
                                 </button>
                             </div>
                         </div>}

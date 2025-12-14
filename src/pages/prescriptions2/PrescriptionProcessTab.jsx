@@ -7,7 +7,8 @@ import BarcodePreviewDialog from "../../components/BarcodePreviewDialog";
 import ContactPrescriberDialog from "./ContactPrescriberDialog";
 import { useUser } from "../../context/UserContext";
 import { AlertCircle, CheckCircle, Clock, Package } from "lucide-react";
-import { getErrorMessage, convertStrToCamelCase } from '../../utils/util';
+import { getErrorMessage, convertStrToCamelCase, PHARMACIST_REVIEW, QA_CHECK, PICKUP_READY, CANCELLED, COMPLETED, READY_FOR_DELIVERY } from '../../utils/util';
+import PharmacistNoteDialog from "./PharmacistNoteDialog";
 
 /**
  * TASKS PER WORKFLOW STEP
@@ -17,13 +18,23 @@ const EXTRA_TASKS = {
         { code: "CONTACT_PRESCRIBER", label: "Contact Prescriber" }
     ],
     PHARMACIST_REVIEW: [
-        { code: "PHARMACIST_NOTE", label: "Pharmacist Note" }
+        { code: "PHARMACIST_NOTE", label: "Pharmacist Note" },
+        { code: "CONTACT_PRESCRIBER", label: "Contact Prescriber" }
+    ],
+    NEEDS_PATIENT_INFO: [
+        { code: "PHARMACIST_NOTE", label: "Pharmacist Note" },
+        { code: "CONTACT_PRESCRIBER", label: "Contact Prescriber" }
+    ],
+    NEEDS_PROVIDER_INFO: [
+        { code: "PHARMACIST_NOTE", label: "Pharmacist Note" },
+        { code: "CONTACT_PRESCRIBER", label: "Contact Prescriber" }
     ],
     FILL: [
         { code: "PRINT_BARCODE", label: "Print Barcode" }
     ],
     QA_CHECK: [],
-    READY: []
+    PICKUP_READY: [],
+    READY_FOR_DELIVERY: []
 };
 
 
@@ -48,6 +59,11 @@ const PrescriptionProcessTab = () => {
     const [prescriberDialog, setPrescriberDialog] = useState({
         isOpen: false,
         prescription: null
+    });
+
+    const [pharmacistDialog, setPharmacistDialog] = useState({
+        isOpen: false,
+        prescriptionId: null
     });
 
     // -------------------------
@@ -171,14 +187,37 @@ const PrescriptionProcessTab = () => {
         setPrescriberDialog({ isOpen: false, prescription: null });
     };
 
+     const openPharmacistDialog = (prescriptionId) => {
+        setPharmacistDialog({ isOpen: true, prescriptionId });
+    };
+
+    const closePharmacistDialog = () => {
+        setPharmacistDialog({ isOpen: false, prescriptionId: null });
+    };
+
     const sendPrescriberMessage = async (payload) => {
         try {
             await axios.post(
                 `/${init.appName}/api/prescriber/contact`,
                 payload,
-                { headers }
+                { headers: { "X-User-Email": appUser.email } }
             );
             showNotification("Message sent to prescriber.");
+            closePrescriberDialog();
+        } catch (err) {
+            console.error(err);
+            showNotification("Failed to send message.", "error");
+        }
+    };
+
+    const updatePrescriptionWithPharmacistNote = async (payload) => {
+        try {
+            await axios.post(
+                `/${init.appName}/api/prescriber/contact`,
+                payload,
+                { headers: { "X-User-Email": appUser.email } }
+            );
+            showNotification("Pharmacist note has been saved.");
             closePrescriberDialog();
         } catch (err) {
             console.error(err);
@@ -214,7 +253,7 @@ const PrescriptionProcessTab = () => {
                 break;
 
             case "PHARMACIST_NOTE":
-                alert("Pharmacist note dialog not yet implemented");
+                openPharmacistDialog(item.prescriptionId);
                 break;
         }
     };
@@ -233,26 +272,14 @@ const PrescriptionProcessTab = () => {
 
     const getWorkflowStepColor = (wokflowStepId) => {
         const colors = {
-            INTAKE_RECEIVED: 'bg-purple-600 hover:bg-purple-700 text-white',
-            "PHARMACIST_REVIEW": 'bg-yellow-100 text-yellow-800 border-yellow-300',
-            "FILL": 'bg-orange-100 text-blue-800 border-blue-300',
-            "QA_CHECK": 'bg-amber-100 text-green-800 border-green-300',
-            "PICKUP_READY": 'bg-lime-100  text-orange-800 border-orange-300',
-            "CANCELLED": 'bg-teal-100 text-red-800 border-red-300',
-            "COMPLETED": 'bg-blue-100 text-blue-800 border-blue-300',
-        };
-        return colors[wokflowStepId] || 'bg-gray-100 text-gray-800 border-gray-300';
-    };
-
-
-    const getNextWorkflowStepColor = (wokflowStepId) => {
-        const colors = {
-            PHARMACIST_REVIEW: 'bg-yellow-100 text-yellow-800 border-yellow-300',
+            INTAKE_RECEIVED: 'bg-indigo-600 hover:bg-indigo-700 text-white',
+            PHARMACIST_REVIEW: 'bg-lime-100 text-lime-800 border-lime-300',
             FILL: 'bg-orange-100 text-blue-800 border-blue-300',
             QA_CHECK: 'bg-amber-100 text-green-800 border-green-300',
-            PICKUP_READY: 'bg-lime-100  text-orange-800 border-orange-300',
-            CANCELLED: 'bg-teal-100 text-red-800 border-red-300',
+            PICKUP_READY: 'bg-green-100  text-green-800 border-green-300',
+            CANCELLED: 'bg-gray-200 text-red-300 border-gray-600',
             COMPLETED: 'bg-blue-100 text-blue-800 border-blue-300',
+            READY_FOR_DELIVERY: 'bg-green-100 text-green-800 border-green-300',
         };
         return colors[wokflowStepId] || 'bg-gray-100 text-gray-800 border-gray-300';
     };
@@ -314,115 +341,116 @@ const PrescriptionProcessTab = () => {
     // UI RENDER
     // -------------------------
     return (
-        <div>
+        <div className="min-h-screen bg-gray-50">
+            {/* Notification */}
             {notification && <Notification notification={notification} />}
 
-            {/* Filter Bar */}
-            {queue && <PrescriptionFilter
-                data={prescriptions}
-                filterList={queue}
-                filterStatus={filterQueue}
-                setFilterStatus={updateQueueAndFilter}
-            />}
+            {/* Main Container */}
+            <div className="max-w-7xl mx-auto px-4 py-6">
 
-            {filteredPrescriptions.length > 0 && transitions.length > 0 && <div className="grid gap-4 mt-4">
-                {
-                    filteredPrescriptions.map(item => {
-                        const tasks = EXTRA_TASKS[item.currentStep] || [];
-                        const transition = transitions.find(t => t.fromStep === item.currentStep);
-                        const toSteps = transition?.toSteps.filter(step => step != item.currentStep) || [];
-                        return (
-                            <div
-                                key={item.prescriptionId}
-                                className="bg-white rounded-lg shadow-sm p-4 hover:shadow-md"
-                            >
-                                <div className="flex justify-between items-start mb-3">
-                                    <div className="flex items-center gap-3">
-                                        {getPriorityIcon(item.priority)}
-                                        <div>
-                                            <div className={`px-2 py-1 rounded text-xs font-medium border ${getWorkflowStepColor(item.currentStep)}`}>
-                                                {item.currentStep.replace(`_`, ` `)}
-                                            </div>
-                                            <div className="text-xs text-gray-500">
-                                                Status: {item.currentStatus.replace(`_`, ` `)}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                {/* White bordered panel (like POSPage) */}
+                <div className="bg-white rounded-lg shadow-sm border p-4">
 
-
-                                {/* Core Info */}
-                                <div className="grid grid-cols-3 gap-4 mb-4">
-                                    <div>
-                                        <div className="text-xs text-gray-500 mb-1">
-                                            Patient
-                                        </div>
-                                        <div className="font-medium">
-                                            {item.patientFirstName} {item.patientLastName}
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <div className="text-xs text-gray-500 mb-1">
-                                            Presciber
-                                        </div>
-                                        <div className="font-medium">
-                                            {item.prescriberFirstName} {item.prescriberLastName}
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <div className="text-xs text-gray-500 mb-1">
-                                            Clinic
-                                        </div>
-                                        <div className="font-medium">
-                                            {item.prescriberFirstName} {item.clinicName}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/** insurance info */}
-                                <InsuranceInfoComponent prescription={item} />
-
-                                {/** drug info */}
-                                <DrugInfoComponent prescription={item} />
-
-
-                                {/* Actions */}
-                                <div className="flex gap-2">
-
-                                    {/* Task Buttons */}
-                                    {tasks.map(task => (
-
-                                        <button
-                                            key={task.code}
-                                            onClick={() => runTask(item, task)}
-                                            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm"
-                                        >
-                                            {task.label}
-                                        </button>
-
-                                    ))}
-
-                                    {/* Workflow Transition Button */}
-                                    {toSteps.map(step => {
-                                        return (
-                                            <button
-                                                key={step}
-                                                onClick={() => goToNextStep(item, step)}
-                                                className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${getNextWorkflowStepColor(step)}`}
-                                            >
-                                                {convertStrToCamelCase(step)}
-                                            </button>
-
-                                        )
-                                    })}
-                                </div>
-                            </div>
-                        )
-                    }
+                    {/* Filter Bar */}
+                    {queue && (
+                        <div className="mb-4">
+                            <PrescriptionFilter
+                                data={prescriptions}
+                                filterList={queue}
+                                filterStatus={filterQueue}
+                                setFilterStatus={updateQueueAndFilter}
+                            />
+                        </div>
                     )}
+
+                    {/* Scrollable Content Area */}
+                    <div className="max-h-[75vh] overflow-y-auto pr-2">
+
+                        {filteredPrescriptions.length > 0 && transitions.length > 0 && (
+                            <div className="grid gap-4">
+                                {filteredPrescriptions.map(item => {
+                                    const tasks = EXTRA_TASKS[item.currentStep] || [];
+                                    const transition = transitions.find(t => t.fromStep === item.currentStep);
+                                    const toSteps = transition?.toSteps.filter(step => step !== item.currentStep) || [];
+
+                                    return (
+                                        <div
+                                            key={item.prescriptionId}
+                                            className="bg-white rounded-lg shadow-sm border p-4 hover:shadow-md"
+                                        >
+                                            {/* Header */}
+                                            <div className="flex justify-between items-start mb-3">
+                                                <div className="flex items-center gap-3">
+                                                    <div>
+                                                        <div className={`flex p-2 rounded text-xs font-medium border ${getWorkflowStepColor(item.currentStep)}`}>
+                                                            {getPriorityIcon(item.priority)} <span>{" " + item.currentStep.replace("_", " ")} </span>
+                                                        </div>
+                                                        <div className="text-xs text-gray-500">
+                                                            Status: {item.currentStatus.replace("_", " ")}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Patient / Prescriber Info */}
+                                            <div className="grid grid-cols-3 gap-4 mb-4">
+                                                <div>
+                                                    <div className="text-xs text-gray-500 mb-1">Patient</div>
+                                                    <div className="font-medium">
+                                                        {item.patientFirstName} {item.patientLastName}
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <div className="text-xs text-gray-500 mb-1">Prescriber</div>
+                                                    <div className="font-medium">
+                                                        {item.prescriberFirstName} {item.prescriberLastName}
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <div className="text-xs text-gray-500 mb-1">Clinic</div>
+                                                    <div className="font-medium">{item.clinicName}</div>
+                                                </div>
+                                            </div>
+
+                                            {/* Insurance Info */}
+                                            <InsuranceInfoComponent prescription={item} />
+
+                                            {/* Drug Info */}
+                                            <DrugInfoComponent prescription={item} />
+
+                                            {/* Actions */}
+                                            <div className="flex flex-wrap gap-2 mt-3">
+
+                                                {tasks.map(task => (
+                                                    <button
+                                                        key={task.code}
+                                                        onClick={() => runTask(item, task)}
+                                                        className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm"
+                                                    >
+                                                        {task.label}
+                                                    </button>
+                                                ))}
+
+                                                {toSteps.map(step => (
+                                                    <button
+                                                        key={step}
+                                                        onClick={() => goToNextStep(item, step)}
+                                                        className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${getWorkflowStepColor(step)}`}
+                                                    >
+                                                        {convertStrToCamelCase(step)}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                </div>
             </div>
-            }
 
             {/* Dialogs */}
             <BarcodePreviewDialog
@@ -438,8 +466,19 @@ const PrescriptionProcessTab = () => {
                 onClose={closePrescriberDialog}
                 onSubmit={sendPrescriberMessage}
             />
+
+             <PharmacistNoteDialog
+                open={pharmacistDialog.isOpen}
+                mode='create'
+                existingNote={null}
+                prescriptionId={pharmacistDialog.prescriptionId}
+                onClose={closePharmacistDialog}
+                onSaved={updatePrescriptionWithPharmacistNote}
+            />
         </div>
     );
+
+
 };
 
 export default PrescriptionProcessTab;

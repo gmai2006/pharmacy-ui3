@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 
 export default function InsuranceCompanyWithPlansPage() {
-    const { appUser } = useUser();
+    const { appUser, token } = useUser();
 
     const [companies, setCompanies] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -73,7 +73,7 @@ export default function InsuranceCompanyWithPlansPage() {
             .get(`/${init.appName}/api/insurance-companies-with-plans?page=0&size=200`, {
                 headers: {
                     "Content-Type": "application/json",
-                    "X-User-Email": appUser.email,
+                    "Authorization": `Bearer ${token}`,
                 },
             })
             .then((res) => {
@@ -321,7 +321,7 @@ export default function InsuranceCompanyWithPlansPage() {
                 {
                     headers: {
                         "Content-Type": "application/json",
-                        "X-User-Email": appUser?.email,
+                        "Authorization": `Bearer ${token}`,
                     },
                 }
             );
@@ -332,7 +332,7 @@ export default function InsuranceCompanyWithPlansPage() {
                 {
                     headers: {
                         "Content-Type": "application/json",
-                        "X-User-Email": appUser?.email,
+                        "Authorization": `Bearer ${token}`,
                     },
                 }
             );
@@ -363,7 +363,7 @@ export default function InsuranceCompanyWithPlansPage() {
                 {
                     headers: {
                         "Content-Type": "application/json",
-                        "X-User-Email": appUser?.email,
+                        "Authorization": `Bearer ${token}`,
                     },
                 }
             )

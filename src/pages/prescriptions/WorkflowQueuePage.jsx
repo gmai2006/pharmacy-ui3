@@ -7,13 +7,13 @@ import { Link } from "react-router-dom";
 const STEPS = ["INTAKE", "REVIEW", "FILL", "QA", "READY"];
 
 export default function WorkflowQueuePage() {
-    const { appUser } = useUser();
+    const { appUser, token } = useUser();
     const [step, setStep] = useState("INTAKE");
     const [list, setList] = useState([]);
     
     const fetchData = () => {
         axios.get(`/${init.appName}/api/prescription-aggregate?max=500`, {
-            headers: { "X-User-Email": appUser.email }
+            headers: { "Authorization": `Bearer ${token}` }
         }).then(res => {
             const data = res.data;
             const filtered = data.filter(p =>

@@ -12,9 +12,11 @@ import Notification from "../../components/Notification";
 import DeviceFingerprintService from "../../utils/fingerprinting";
 import DeleteDialog from "../../components/DeleteDialog";
 import DeviceDialog from "./DeviceDialog";
+import UpdateDeviceHashDialog from "./UpdateDeviceHashDialog";
+
 
 export default function DeviceFingerprintPage() {
-    const { appUser } = useUser();
+    const { appUser, token } = useUser();
 
     const [devices, setDevices] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -27,6 +29,9 @@ export default function DeviceFingerprintPage() {
 
     const [search, setSearch] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
+
+    const [dialogType, setDialogType] = useState("create"); // "create" | "editHash"
+
     const itemsPerPage = 6;
 
     const baseUrl = `/${init.appName}/api/device-fingerprints`;
@@ -49,7 +54,7 @@ export default function DeviceFingerprintPage() {
             .get(`${baseUrl}?page=0&size=200`, {
                 headers: {
                     "Content-Type": "application/json",
-                    "X-User-Email": appUser.email,
+                    "Authorization": `Bearer ${token}`,
                 },
             })
             .then((res) => setDevices(res.data.content || []))
@@ -88,25 +93,27 @@ export default function DeviceFingerprintPage() {
     const openNewDialog = async () => {
         const device = await resetForm();
         setSelectedDevice(device);
+        setDialogType("create");   // NEW device uses DeviceDialog
         setShowDialog(true);
     };
 
+
     const openEditDialog = (device) => {
         setSelectedDevice(device);
+        setDialogType("editHash");   // EXISTING device → UpdateDeviceHashDialog
         setShowDialog(true);
     };
+
 
     // ---------------------------------------------------------
     // Save (create/update)
     // ---------------------------------------------------------
     const saveDevice = async (device) => {
-        const payload = { ...device, stationId: Number(device.stationId) };
-
         try {
-            await axios.post(`${baseUrl}/auto-register`, payload, {
+            await axios.post(`${baseUrl}/`, device, {
                 headers: {
                     "Content-Type": "application/json",
-                    "X-User-Email": appUser.email,
+                    "Authorization": `Bearer ${token}`,
                 },
             });
 
@@ -118,13 +125,30 @@ export default function DeviceFingerprintPage() {
         }
     };
 
+    const updateHash = async (device) => {
+        try {
+            await axios.put(
+                `${baseUrl}/${device.id}/`,
+                device,
+                { headers: { "Authorization": `Bearer ${token}` } }
+            );
+
+            notify("success", "Hashcode updated");
+            setShowDialog(false);
+            fetchDevices();
+        } catch (err) {
+            notify("error", err.response?.data || "Failed to update device hash");
+        }
+    };
+
+
     // ---------------------------------------------------------
     // Delete
     // ---------------------------------------------------------
     const deleteDevice = async (id) => {
         try {
             await axios.delete(`${baseUrl}/${id}`, {
-                headers: { "X-User-Email": appUser.email },
+                headers: { "Authorization": `Bearer ${token}`, },
             });
 
             notify("success", "Device deleted");
@@ -240,7 +264,7 @@ export default function DeviceFingerprintPage() {
 
                 {/* Action Bar (Add - Search - Export) */}
                 <div className="flex gap-4 mb-8 flex-wrap items-center">
-                    
+
                     {/* Add New */}
                     <button
                         onClick={openNewDialog}
@@ -397,11 +421,10 @@ export default function DeviceFingerprintPage() {
 
                                             <button
                                                 onClick={() => setCurrentPage(num)}
-                                                className={`px-3 py-2 rounded-lg text-sm ${
-                                                    num === currentPage
-                                                        ? "bg-indigo-600 text-white"
-                                                        : "border border-gray-300 text-gray-700 hover:bg-gray-50"
-                                                }`}
+                                                className={`px-3 py-2 rounded-lg text-sm ${num === currentPage
+                                                    ? "bg-indigo-600 text-white"
+                                                    : "border border-gray-300 text-gray-700 hover:bg-gray-50"
+                                                    }`}
                                             >
                                                 {num}
                                             </button>
@@ -428,7 +451,7 @@ export default function DeviceFingerprintPage() {
                 )}
 
                 {/* Dialogs */}
-                {showDialog && (
+                {showDialog && dialogType === "create" && (
                     <DeviceDialog
                         device={selectedDevice}
                         close={() => setShowDialog(false)}
@@ -436,6 +459,16 @@ export default function DeviceFingerprintPage() {
                         notify={notify}
                     />
                 )}
+
+                {showDialog && dialogType === "editHash" && (
+                    <UpdateDeviceHashDialog
+                        device={selectedDevice}
+                        close={() => setShowDialog(false)}
+                        submit={updateHash}
+                        notify={notify}
+                    />
+                )}
+
 
                 {deleteId && (
                     <DeleteDialog

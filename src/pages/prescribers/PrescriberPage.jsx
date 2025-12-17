@@ -10,7 +10,7 @@ import PrescriberDialog from "./PrescriberDialog";
 import { useUser } from "../../context/UserContext";
 
 export default function PrescriberPage() {
-    const { appUser } = useUser();
+    const { appUser, token } = useUser();
 
     const [prescribers, setPrescribers] = useState([]);
     const [selected, setSelected] = useState(null);
@@ -43,7 +43,7 @@ export default function PrescriberPage() {
             .get(`${apiUrl}?page=0&size=500`, {
                 headers: {
                     "Content-Type": "application/json",
-                    "X-User-Email": appUser.email,
+                    "Authorization": `Bearer ${token}`,
                 },
             })
             .then((res) => setPrescribers(res.data.content || []))
@@ -95,13 +95,13 @@ export default function PrescriberPage() {
             ? axios.put(`${apiUrl}/${data.id}`, payload, {
                 headers: {
                     "Content-Type": "application/json",
-                    "X-User-Email": appUser.email,
+                    "Authorization": `Bearer ${token}`,
                 },
             })
             : axios.post(apiUrl, payload, {
                 headers: {
                     "Content-Type": "application/json",
-                    "X-User-Email": appUser.email,
+                    "Authorization": `Bearer ${token}`,
                 },
             });
 
@@ -122,7 +122,7 @@ export default function PrescriberPage() {
             .delete(`${apiUrl}/${deleteId}`, {
                 headers: {
                     "Content-Type": "application/json",
-                    "X-User-Email": appUser.email,
+                    "Authorization": `Bearer ${token}`,
                 },
             })
             .then(() => {

@@ -1,78 +1,96 @@
 import React, { useState, useEffect } from "react";
+import axios from "axios";
 import { X } from "lucide-react";
+import init from "../../init";
+import { useUser } from "../../context/UserContext";
 
 export default function DeviceDialog({ device, close, submit, notify }) {
+    const { token } = useUser();
+
     const emptyDevice = {
         id: null,
         stationId: "",
         fingerprintHash: "",
-        browserUserAgent: "",
-        screenResolution: "",
-        timezone: "",
-        language: "",
-        canvasFingerprint: "",
-        webglFingerprint: "",
         department: "",
         location: "",
         isActive: true,
-        accessCount: 1,
     };
 
     const [local, setLocal] = useState(emptyDevice);
+    const [stations, setStations] = useState([]);
 
-    // Pre-fill fields if editing
+    // --------------------------------------------------------------
+    // Load stations
+    // --------------------------------------------------------------
+    useEffect(() => {
+        axios
+            .get(`/${init.appName}/api/stations/unassigned`, {
+                headers: { Authorization: `Bearer ${token}` },
+            })
+            .then((res) => setStations(res.data.content || []))
+            .catch(() => notify("error", "Failed to load stations"));
+    }, []);
+
+    // --------------------------------------------------------------
+    // Pre-fill fields
+    // --------------------------------------------------------------
     useEffect(() => {
         setLocal(device ?? emptyDevice);
     }, [device]);
 
+    // --------------------------------------------------------------
+    // Handle change (generic)
+    // --------------------------------------------------------------
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
 
         setLocal((prev) => ({
             ...prev,
-            [name]:
-                type === "checkbox"
-                    ? checked
-                    : type === "number"
-                    ? Number(value)
-                    : value,
+            [name]: type === "checkbox" ? checked : value,
         }));
     };
 
+    // --------------------------------------------------------------
+    // Auto-fill department/location when station changes
+    // --------------------------------------------------------------
+    const handleStationChange = (e) => {
+        const stationId = e.target.value;
+        const selected = stations.find((s) => `${s.id}` === `${stationId}`);
+
+        setLocal((prev) => ({
+            ...prev,
+            stationId,
+            department: selected?.department || "",
+            location: selected?.location || "",
+        }));
+    };
+
+    // --------------------------------------------------------------
+    // Submit
+    // --------------------------------------------------------------
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        if (!local.stationId) {
-            notify("error", "Station ID is required");
-            return;
-        }
-
-        if (!local.fingerprintHash) {
-            notify("error", "Fingerprint hash is required");
-            return;
-        }
-
-        if (!local.department) {
-            notify("error", "Department is required");
-            return;
-        }
+        if (!local.stationId) return notify("error", "Station ID is required");
+        if (!local.fingerprintHash) return notify("error", "Fingerprint Hash is required");
 
         submit(local);
     };
 
+    // --------------------------------------------------------------
+    // RENDER
+    // --------------------------------------------------------------
+
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-screen overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-xl shadow-xl max-w-lg w-full overflow-hidden">
 
                 {/* HEADER */}
-                <div className="sticky top-0 bg-white border-b p-6 flex justify-between items-center">
-                    <h2 className="text-2xl font-bold text-gray-900">
+                <div className="flex justify-between items-center border-b p-5">
+                    <h2 className="text-xl font-bold text-gray-900">
                         {local.id ? "Edit Device" : "Register New Device"}
                     </h2>
-                    <button
-                        onClick={close}
-                        className="text-gray-500 hover:text-gray-700"
-                    >
+                    <button onClick={close} className="text-gray-500 hover:text-gray-700">
                         <X size={24} />
                     </button>
                 </div>
@@ -80,182 +98,74 @@ export default function DeviceDialog({ device, close, submit, notify }) {
                 {/* FORM */}
                 <form onSubmit={handleSubmit} className="p-6 space-y-6">
 
-                    {/* Station + Fingerprint */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                        <div>
-                            <label className="block text-sm font-medium mb-1">
-                                Station ID *
-                            </label>
-                            <input
-                                type="number"
-                                name="stationId"
-                                value={local.stationId}
-                                onChange={handleChange}
-                                className="w-full px-4 py-2 border rounded-lg"
-                                required
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium mb-1">
-                                Fingerprint Hash *
-                            </label>
-                            <input
-                                type="text"
-                                name="fingerprintHash"
-                                value={local.fingerprintHash}
-                                onChange={handleChange}
-                                className="w-full px-4 py-2 border rounded-lg break-all"
-                                required
-                            />
-                        </div>
+                    {/* Station */}
+                    <div>
+                        <label className="block text-sm font-medium mb-1">Station *</label>
+                        <select
+                            name="stationId"
+                            value={local.stationId}
+                            onChange={handleStationChange}
+                            className="w-full px-4 py-2 border rounded-lg"
+                            required
+                        >
+                            <option value="">Select station…</option>
+                            {stations.map((s) => (
+                                <option key={s.id} value={s.id}>
+                                    {s.stationPrefix + s.id}
+                                </option>
+                            ))}
+                        </select>
                     </div>
 
-                    {/* Browser + Resolution */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                        <div>
-                            <label className="block text-sm font-medium mb-1">
-                                Browser User Agent
-                            </label>
-                            <textarea
-                                name="browserUserAgent"
-                                value={local.browserUserAgent || ""}
-                                onChange={handleChange}
-                                rows={2}
-                                className="w-full px-4 py-2 border rounded-lg"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium mb-1">
-                                Screen Resolution
-                            </label>
-                            <input
-                                type="text"
-                                name="screenResolution"
-                                value={local.screenResolution || ""}
-                                onChange={handleChange}
-                                className="w-full px-4 py-2 border rounded-lg"
-                            />
-                        </div>
+                    {/* Fingerprint Hash */}
+                    <div>
+                        <label className="block text-sm font-medium mb-1">Fingerprint Hash *</label>
+                        <input
+                            type="text"
+                            name="fingerprintHash"
+                            value={local.fingerprintHash}
+                            readOnly
+                            disabled
+                            className="w-full px-4 py-2 border rounded-lg break-all"
+                        />
                     </div>
 
-                    {/* Timezone + Language */}
+                    {/* Auto-filled department + location */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
                         <div>
-                            <label className="block text-sm font-medium mb-1">
-                                Timezone
-                            </label>
+                            <label className="block text-sm font-medium mb-1">Department</label>
                             <input
                                 type="text"
-                                name="timezone"
-                                value={local.timezone || ""}
-                                onChange={handleChange}
-                                className="w-full px-4 py-2 border rounded-lg"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium mb-1">
-                                Language
-                            </label>
-                            <input
-                                type="text"
-                                name="language"
-                                value={local.language || ""}
-                                onChange={handleChange}
-                                className="w-full px-4 py-2 border rounded-lg"
-                            />
-                        </div>
-                    </div>
-
-                    {/* Canvas + WebGL */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium mb-1">
-                                Canvas Fingerprint
-                            </label>
-                            <textarea
-                                name="canvasFingerprint"
-                                rows={2}
-                                value={local.canvasFingerprint || ""}
-                                onChange={handleChange}
-                                className="w-full px-4 py-2 border rounded-lg"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium mb-1">
-                                WebGL Fingerprint
-                            </label>
-                            <textarea
-                                name="webglFingerprint"
-                                rows={2}
-                                value={local.webglFingerprint || ""}
-                                onChange={handleChange}
-                                className="w-full px-4 py-2 border rounded-lg"
-                            />
-                        </div>
-                    </div>
-
-                    {/* Department + Location */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium mb-1">
-                                Department *
-                            </label>
-                            <input
-                                type="text"
-                                name="department"
                                 value={local.department}
-                                onChange={handleChange}
-                                className="w-full px-4 py-2 border rounded-lg"
-                                required
+                                readOnly
+                                disabled
+                                className="w-full px-4 py-2 border rounded-lg bg-gray-100 text-gray-600"
                             />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium mb-1">
-                                Location
-                            </label>
+                            <label className="block text-sm font-medium mb-1">Location</label>
                             <input
                                 type="text"
-                                name="location"
                                 value={local.location || ""}
-                                onChange={handleChange}
-                                className="w-full px-4 py-2 border rounded-lg"
+                                readOnly
+                                disabled
+                                className="w-full px-4 py-2 border rounded-lg bg-gray-100 text-gray-600"
                             />
                         </div>
                     </div>
 
-                    {/* Active + Access Count */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                        <div className="flex items-center gap-3 pt-2">
-                            <input
-                                type="checkbox"
-                                name="isActive"
-                                checked={local.isActive}
-                                onChange={handleChange}
-                                className="w-4 h-4"
-                            />
-                            <span className="font-medium">Active Device</span>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium mb-1">
-                                Access Count
-                            </label>
-                            <input
-                                type="number"
-                                name="accessCount"
-                                value={local.accessCount}
-                                onChange={handleChange}
-                                className="w-full px-4 py-2 border rounded-lg"
-                            />
-                        </div>
+                    {/* Active */}
+                    <div className="flex items-center gap-3 pt-2">
+                        <input
+                            type="checkbox"
+                            name="isActive"
+                            checked={local.isActive}
+                            onChange={handleChange}
+                            className="w-4 h-4"
+                        />
+                        <span className="font-medium">Active Device</span>
                     </div>
 
                     {/* FOOTER BUTTONS */}
@@ -276,6 +186,7 @@ export default function DeviceDialog({ device, close, submit, notify }) {
                         </button>
                     </div>
                 </form>
+
             </div>
         </div>
     );

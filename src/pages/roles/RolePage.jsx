@@ -12,7 +12,7 @@ import RoleDialog from "./RoleDialog";
 const roleUrl = "/" + init.appName + "/api/roles/";
 
 export default function RolePage() {
-    const { appUser } = useUser();
+    const { appUser, token } = useUser();
 
     const [roles, setRoles] = useState([]);
     const [selectedRole, setSelectedRole] = useState(undefined);
@@ -32,7 +32,7 @@ export default function RolePage() {
         fetch(roleUrl, {
             headers: {
                 "Content-Type": "application/json",
-                "X-User-Email": appUser.email,
+                "Authorization": `Bearer ${token}`,
             },
         })
             .then((r) => r.json())
@@ -69,7 +69,7 @@ export default function RolePage() {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "X-User-Email": appUser.email,
+                    "Authorization": `Bearer ${token}`,
                 },
                 body: JSON.stringify(data),
             });
@@ -89,7 +89,7 @@ export default function RolePage() {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
-                    "X-User-Email": appUser.email,
+                    "Authorization": `Bearer ${token}`,
                 },
                 body: JSON.stringify(data),
             });
@@ -114,7 +114,7 @@ export default function RolePage() {
                 method: "DELETE",
                 headers: {
                     "Content-Type": "application/json",
-                    "X-User-Email": appUser.email,
+                    "Authorization": `Bearer ${token}`,
                 },
             });
 

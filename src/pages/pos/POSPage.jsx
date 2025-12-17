@@ -3,14 +3,14 @@ import { Bell, CheckCircle, XCircle, User, Pill, Clock, CreditCard, DollarSign, 
 import axios from "axios";
 import { useUser } from "../../context/UserContext";
 import init from "../../init";
-import { IN_REVIEW, READY_TO_FILL, AWAITING_PICKUP, COMPLETED, convertDateArrayToDate } from '../../utils/util';
+import { IN_REVIEW, READY_TO_FILL, AWAITING_PICKUP, COMPLETED } from '../prescriptions2/PrescriptionDictionary';
 
 export default function POSPage() {
   const [activeStation, setActiveStation] = useState('station-1');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [prescriptions, setPrescriptions] = useState([]);
-  const { appUser } = useUser();
+  const { appUser, token } = useUser();
   const [cart, setCart] = useState([]);
   const [showSignatureModal, setShowSignatureModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -28,7 +28,7 @@ export default function POSPage() {
   const loadPrescriptionSummary = async () => {
     const res = await axios.get(
       `/${init.appName}/api/prescription-aggregate?max=200`,
-      { headers: { "X-User-Email": appUser.email } }
+      { headers: { "Authorization": `Bearer ${token}` } }
     );
     setPrescriptions(res.data || []);
   };

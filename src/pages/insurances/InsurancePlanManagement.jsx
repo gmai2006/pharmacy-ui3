@@ -5,7 +5,7 @@ import Notification from "../../components/Notification";
 import { useUser } from "../../context/UserContext";
 
 export default function InsurancePlanManagement() {
-  const { appUser } = useUser();
+  const { appUser, token } = useUser();
 
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -47,7 +47,7 @@ export default function InsurancePlanManagement() {
       .get(`/${init.appName}/api/insurance-plans?page=0&size=200`, {
         headers: {
           "Content-Type": "application/json",
-          "X-User-Email": appUser.email,
+          "Authorization": `Bearer ${token}`,
         },
       })
       .then((res) => setPlans(res.data.content || []))
@@ -129,12 +129,12 @@ export default function InsurancePlanManagement() {
         `/${init.appName}/api/insurance-plans/${editing.id}`,
         payload,
         {
-          headers: { "Content-Type": "application/json", "X-User-Email": appUser.email },
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         }
       );
     } else {
       req = axios.post(`/${init.appName}/api/insurance-plans`, payload, {
-        headers: { "Content-Type": "application/json", "X-User-Email": appUser.email },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
       });
     }
 
@@ -158,7 +158,7 @@ export default function InsurancePlanManagement() {
 
     axios
       .delete(`/${init.appName}/api/insurance-plans/${id}`, {
-        headers: { "Content-Type": "application/json", "X-User-Email": appUser.email },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
       })
       .then(() => {
         notify("success", "Insurance plan deleted.");
@@ -175,7 +175,7 @@ export default function InsurancePlanManagement() {
 
     axios
       .put(`/${init.appName}/api/insurance-plans/${plan.id}`, payload, {
-        headers: { "Content-Type": "application/json", "X-User-Email": appUser.email },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
       })
       .then(() => {
         notify("success", "Status updated.");

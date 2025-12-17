@@ -4,13 +4,13 @@ import init from "../../init";
 import { useUser } from "../../context/UserContext";
 
 export default function WorkflowTransitionDialog({ item, transition, onClose }) {
-    const { appUser } = useUser();
+    const { appUser, token } = useUser();
 
     const submit = () => {
         axios.post(
             `/${init.appName}/api/prescription-items/${item.prescriptionItemId}/transition`,
             { toStep: transition.to },
-            { headers: { "X-User-Email": appUser.email } }
+            { headers: { "Authorization": `Bearer ${token}` } }
         )
         .then(onClose)
         .catch((err) => alert("Transition failed: " + err.message));

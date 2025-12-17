@@ -43,7 +43,7 @@ const headers = {
 };
 
 const PrescriptionProcessTab = () => {
-    const { appUser } = useUser();
+    const { appUser, token } = useUser();
 
     const [notification, setNotification] = useState(null);
     // const [workflowSteps, setWorkflowSteps] = useState([]);
@@ -91,7 +91,7 @@ const PrescriptionProcessTab = () => {
     const loadAggregated = async () => {
         const res = await axios.get(
             `/${init.appName}/api/prescription-aggregate?max=200`,
-            { headers: { "X-User-Email": appUser.email } }
+            { headers: { "Authorization": `Bearer ${token}` } }
         );
         setPrescriptions(res.data || []);
     };
@@ -170,7 +170,7 @@ const PrescriptionProcessTab = () => {
             await axios.post(
                 `/${init.appName}/api/prescription-items/${item.prescriptionItemId}/transition`,
                 { toStep: transition.to },
-                { headers: { "X-User-Email": appUser.email } }
+                { headers: { "Authorization": `Bearer ${token}` } }
             );
 
             showNotification(`Moved to ${transition.to}`);

@@ -4,7 +4,7 @@ import { useUser } from "../../context/UserContext";
 import init from "../../init";
 
 export default function AuthLogPage() {
-  const { appUser } = useUser();
+  const { appUser, token } = useUser();
   const [logs, setLogs] = useState([]);
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(20);
@@ -36,7 +36,7 @@ export default function AuthLogPage() {
       const resp = await fetch(url, {
         headers: {
           "Content-Type": "application/json",
-          "X-User-Email": appUser.email, // Provided by Okta UI
+          "Authorization": `Bearer ${token}`, // Provided by Okta UI
         },
       });
 

@@ -29,7 +29,7 @@ const roleOptions = {
 };
 
 const UserPage = () => {
-    const { appUser } = useUser();
+    const { appUser, token } = useUser();
     const [users, setUsers] = useState([]);
     const [selectedUser, setSelectedUser] = useState(undefined);
     const [showModal, setShowModal] = useState(false);
@@ -45,7 +45,7 @@ const UserPage = () => {
             const response = await fetch(roleUrl, {
                 headers: {
                     "Content-Type": "application/json",
-                    "X-User-Email": appUser.email,
+                    "Authorization": `Bearer ${token}`,
                 },
             });
             if (!response.ok) throw new Error('Failed to fetch roles');
@@ -71,7 +71,7 @@ const UserPage = () => {
                 const response = await fetch(`/${init.appName}/api/users-with-roles`, {
                     headers: {
                         "Content-Type": "application/json",
-                        "X-User-Email": appUser.email,
+                        "Authorization": `Bearer ${token}`,
                     },
                 })
                 if (!response.ok) throw new Error('Failed to fetch users');
@@ -225,7 +225,7 @@ const UserPage = () => {
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
-                    "X-User-Email": appUser.email,
+                    "Authorization": `Bearer ${token}`,
                 },
             });
 
@@ -252,7 +252,7 @@ const UserPage = () => {
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
-                    "X-User-Email": appUser.email,
+                    "Authorization": `Bearer ${token}`,
                 },
                 body: JSON.stringify({
                     ...userData
@@ -283,7 +283,7 @@ const UserPage = () => {
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
-                    "X-User-Email": appUser.email,
+                    "Authorization": `Bearer ${token}`,
                 },
                 body: JSON.stringify({
                     ...data

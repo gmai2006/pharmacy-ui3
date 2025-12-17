@@ -5,7 +5,7 @@ import { useUser } from "../../context/UserContext";
 import { Link } from "react-router-dom";
 
 export default function FillQueuePage() {
-    const { appUser } = useUser();
+    const { appUser, token } = useUser();
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -21,7 +21,7 @@ export default function FillQueuePage() {
         setLoading(true);
         axios
             .get(`/${init.appName}/api/prescription-aggregate?max=500`, {
-                headers: { "X-User-Email": appUser.email }
+                headers: { "Authorization": `Bearer ${token}` }
             })
             .then((res) => {
                 const all = res.data || [];
@@ -59,7 +59,7 @@ export default function FillQueuePage() {
             .post(
                 `/${init.appName}/api/prescription-items/${itemId}/start-fill`,
                 {},
-                { headers: { "X-User-Email": appUser.email } }
+                { headers: { "Authorization": `Bearer ${token}` } }
             )
             .then(fetchQueue)
             .catch((err) => alert("Failed to start fill: " + err.message));
@@ -70,7 +70,7 @@ export default function FillQueuePage() {
             .post(
                 `/${init.appName}/api/prescription-items/${itemId}/complete-fill`,
                 {},
-                { headers: { "X-User-Email": appUser.email } }
+                { headers: { "Authorization": `Bearer ${token}` } }
             )
             .then(fetchQueue)
             .catch((err) => alert("Failed to complete fill: " + err.message));
@@ -81,7 +81,7 @@ export default function FillQueuePage() {
             .post(
                 `/${init.appName}/api/prescription-items/${cancelItem}/cancel`,
                 { reason: cancelReason },
-                { headers: { "X-User-Email": appUser.email } }
+                { headers: { "Authorization": `Bearer ${token}` } }
             )
             .then(() => {
                 setCancelItem(null);

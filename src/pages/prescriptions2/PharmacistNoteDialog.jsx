@@ -12,7 +12,7 @@ export default function PharmacistNoteDialog({
     onClose,
     onSaved,
 }) {
-    const { appUser } = useUser();
+    const { appUser, token } = useUser();
 
     const NOTE_TYPES = [
         { value: "CLINICAL_REVIEW", label: "Clinical Review" },
@@ -91,7 +91,7 @@ export default function PharmacistNoteDialog({
 
         const method = mode === "edit" ? axios.put : axios.post;
 
-        method(url, payload, { headers: { "Content-Type": "application/json" } })
+        method(url, payload, { headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}`, } })
             .then(() => {
                 onSaved?.();
                 onClose();
@@ -103,7 +103,7 @@ export default function PharmacistNoteDialog({
     // ----------------------------------------
     // SAVE ADDENDUM
     // ----------------------------------------
-    const saveAddendum = () => {
+    const saveAddendum = (token) => {
         if (!addendumText.trim()) {
             setError("Addendum cannot be empty.");
             return;
@@ -119,7 +119,7 @@ export default function PharmacistNoteDialog({
                     actorUserId: appUser?.userId,
                     addendumText: addendumText.trim(),
                 },
-                { headers: { "Content-Type": "application/json" } }
+                { headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}`, } }
             )
             .then(() => {
                 onSaved?.();

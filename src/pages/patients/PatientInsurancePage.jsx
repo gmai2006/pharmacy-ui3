@@ -15,7 +15,7 @@ import {
 
 export default function PatientInsurancePage() {
 
-    const { appUser } = useUser();
+    const { appUser, token } = useUser();
 
     // ------------------------------------------------------------
     // STATE
@@ -86,7 +86,7 @@ export default function PatientInsurancePage() {
 
         axios.get(`/${init.appName}/api/patient-insurance-summary?page=0&size=200`, {
             headers: {
-                "X-User-Email": appUser.email
+                "Authorization": `Bearer ${token}`
             }
         })
             .then(res => {
@@ -143,7 +143,7 @@ export default function PatientInsurancePage() {
     const openEditForm = (patient) => {
 
         axios.get(`/${init.appName}/api/patient-insurances/${patient.patientId}`, {
-            headers: { "X-User-Email": appUser.email }
+            headers: { "Authorization": `Bearer ${token}` }
         })
             .then(res => {
                 const full = res.data;
@@ -223,11 +223,11 @@ export default function PatientInsurancePage() {
         let req;
         if (editingPatient) {
             req = axios.put(`/${init.appName}/api/patient-insurances`, payload, {
-                headers: { "X-User-Email": appUser.email }
+                headers: { "Authorization": `Bearer ${token}` }
             });
         } else {
             req = axios.post(`/${init.appName}/api/patient-insurances`, payload, {
-                headers: { "X-User-Email": appUser.email }
+                headers: { "Authorization": `Bearer ${token}` }
             });
         }
 
@@ -248,7 +248,7 @@ export default function PatientInsurancePage() {
         if (!window.confirm("Delete this patient and all insurance records?")) return;
 
         axios.delete(`/${init.appName}/api/patient-insurances/${patient.patientId}`, {
-            headers: { "X-User-Email": appUser.email }
+            headers: { "Authorization": `Bearer ${token}` }
         })
             .then(() => {
                 showNotification("Patient deleted");

@@ -10,43 +10,48 @@ const headers = {
 const selectUrl = `/${init.appName}/api/devicefingerprints/selectAll`;
 const deviceUrl = `/${init.appName}/api/devicefingerprints/`;
 
-const getDevices = async () => {
-    try {
-        const response = await fetch(selectUrl, { headers: headers });
-        if (!response.ok) throw new Error('Failed to fetch users');
-        return await response.json();
-    } catch (error) {
-        console.error('Error fetching data:', error);
-        showNotification('Failed to load users', 'error');
-    } finally {
 
-    }
-};
-
-const StationInfo = ({ appUser, setStationId }) => {
+const StationInfo = ({ token, setStationId }) => {
     const [department, setDepartment] = useState('Pharmacy');
     const [location, setLocation] = useState('Main Counter');
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        initializeStation();
+        initializeStation(token);
     }, []);
 
-    const initializeStation = async () => {
+    const getDevices = async (token) => {
+        try {
+            const response = await fetch(selectUrl, {
+                headers: headers = {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    "Authorization": `Bearer ${token}`,
+                }
+            });
+            if (!response.ok) throw new Error('Failed to fetch users');
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching data:', error);
+            showNotification('Failed to load users', 'error');
+        } finally {
+
+        }
+    };
+
+    const initializeStation = async (token) => {
         try {
 
             // Check localStorage first
             const savedStationId = localStorage.getItem('stationId');
             const savedTimestamp = localStorage.getItem('stationTimestamp');
-            const devices = await getDevices();
+            const devices = await getDevices(token);
 
             if (savedStationId && savedTimestamp) {
                 // Verify station is still valid
                 const exists = devices.find(device => device.id === savedStationId);
                 if (exists) {
                     setStationId(savedStationId);
-                    // updateLastSeen(savedStationId);
-                    // onStationReady(savedStationId);
                     return;
                 }
             }
@@ -64,7 +69,7 @@ const StationInfo = ({ appUser, setStationId }) => {
             }
 
             //not found => register a new station
-            const newStation = await registerDevice({
+            const newStation = await registerDevice(token, {
                 fingerprintHash: fingerprintHash,
                 department,
                 location,
@@ -88,11 +93,15 @@ const StationInfo = ({ appUser, setStationId }) => {
     };
 
     // Handle add a new station
-    const registerDevice = async (data) => {
+    const registerDevice = async (token, data) => {
         try {
             const response = await fetch(deviceUrl, {
                 method: 'PUT',
-                headers: headers,
+                headers: headers = {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    "Authorization": `Bearer ${token}`,
+                },
                 body: JSON.stringify({
                     ...data,
                 })
@@ -118,7 +127,7 @@ const StationInfo = ({ appUser, setStationId }) => {
     }
 
     return
-    {  };
+    { };
 
 };
 

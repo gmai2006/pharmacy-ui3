@@ -7,39 +7,14 @@ import BarcodePreviewDialog from "../../components/BarcodePreviewDialog";
 import ContactPrescriberDialog from "./ContactPrescriberDialog";
 import { useUser } from "../../context/UserContext";
 import { AlertCircle, CheckCircle, Clock, Package } from "lucide-react";
-import { getErrorMessage, convertStrToCamelCase, PHARMACIST_REVIEW, QA_CHECK, PICKUP_READY, CANCELLED, COMPLETED, READY_FOR_DELIVERY } from '../../utils/util';
+import { getErrorMessage, convertStrToCamelCase } from '../../utils/util';
 import PharmacistNoteDialog from "./PharmacistNoteDialog";
-
-/**
- * TASKS PER WORKFLOW STEP
- */
-const EXTRA_TASKS = {
-    INTAKE_RECEIVED: [
-        { code: "CONTACT_PRESCRIBER", label: "Contact Prescriber" }
-    ],
-    PHARMACIST_REVIEW: [
-        { code: "PHARMACIST_NOTE", label: "Pharmacist Note" },
-        { code: "CONTACT_PRESCRIBER", label: "Contact Prescriber" }
-    ],
-    NEEDS_PATIENT_INFO: [
-        { code: "PHARMACIST_NOTE", label: "Pharmacist Note" },
-        { code: "CONTACT_PRESCRIBER", label: "Contact Prescriber" }
-    ],
-    NEEDS_PROVIDER_INFO: [
-        { code: "PHARMACIST_NOTE", label: "Pharmacist Note" },
-        { code: "CONTACT_PRESCRIBER", label: "Contact Prescriber" }
-    ],
-    FILL: [
-        { code: "PRINT_BARCODE", label: "Print Barcode" }
-    ],
-    QA_CHECK: [],
-    PICKUP_READY: [],
-    READY_FOR_DELIVERY: []
-};
-
+import CancelPrescriptionDialog from "./CancelPrescriptionDialog";
+import { PHARMACIST_REVIEW, QA_CHECK, PICKUP_READY, CANCELLED, COMPLETED, READY_FOR_DELIVERY, EXTRA_TASKS, WORKFLOW_STEP_TOOLTIPS, TASK_TOOLTIPS } from "./PrescriptionDictionary";
+import { Tooltip } from "../../components/Tooltip";
 
 const PrescriptionProcessTab = () => {
-    const { appUser } = useUser();
+    const { appUser, token } = useUser();
 
     const [notification, setNotification] = useState(null);
     const [queue, setQueue] = useState([]);
@@ -63,8 +38,14 @@ const PrescriptionProcessTab = () => {
 
     const [pharmacistDialog, setPharmacistDialog] = useState({
         isOpen: false,
-        prescriptionId: null
+        prescription: null
     });
+
+    const [cancelDialog, setCancelDialog] = useState({
+        isOpen: false,
+        prescription: null
+    });
+
 
     // -------------------------
     // Notification Auto-close
@@ -85,7 +66,7 @@ const PrescriptionProcessTab = () => {
     const loadWorkflowSteps = async () => {
         const res = await axios.get(
             `/${init.appName}/api/workflow-steps/`,
-            { headers: { "X-User-Email": appUser.email } }
+            { headers: { "Authorization": `Bearer ${token}` } }
         );
         steps.current = res.data?.content || [];
     };
@@ -93,7 +74,7 @@ const PrescriptionProcessTab = () => {
     const loadTransitions = async () => {
         const res = await axios.get(
             `/${init.appName}/api/vworkflow-transitions?max=200`,
-            { headers: { "X-User-Email": appUser.email } }
+            { headers: { "Authorization": `Bearer ${token}` } }
         );
         setTransitions(res.data || []);
     };
@@ -101,7 +82,7 @@ const PrescriptionProcessTab = () => {
     const loadPrescriptionSummary = async () => {
         const res = await axios.get(
             `/${init.appName}/api/prescription-aggregate?max=200`,
-            { headers: { "X-User-Email": appUser.email } }
+            { headers: { "Authorization": `Bearer ${token}` } }
         );
         setPrescriptions(res.data || []);
         const queues = [...new Set(res.data.map(d => d.activeQueueName))];
@@ -125,12 +106,13 @@ const PrescriptionProcessTab = () => {
             showNotification("No transition available.", "error");
             return;
         }
+        //cancelled step requires a confirmation
         console.log(`goto next step ${toStep}`);
         try {
             const res = await axios.post(
                 `/${init.appName}/api/workflow/transition/`,
                 { prescriptionId: item.prescriptionId, fromStep: item.currentStep, toStep: toStep, userAgent: navigator.userAgent },
-                { headers: { "X-User-Email": appUser.email } }
+                { headers: { "Authorization": `Bearer ${token}` } }
             );
             await loadPrescriptionSummary();
             console.log(`successfully move to next step ${item.currentStep}`);
@@ -153,6 +135,32 @@ const PrescriptionProcessTab = () => {
             }
         }
     };
+
+    const submitCancellation = async ({ prescriptionId, cancellationNote }) => {
+        try {
+            await axios.post(
+                `/${init.appName}/api/workflow/transition/`,
+                {
+                    prescriptionId,
+                    fromStep: 'ANY',       // or the actual current step
+                    toStep: CANCELLED,
+                    cancellationNote,
+                    userAgent: navigator.userAgent
+                },
+                { headers: { "Authorization": `Bearer ${token}` } }
+            );
+
+            await loadPrescriptionSummary();
+            closeCancelDialog();
+            showNotification("Prescription cancelled successfully.", "success");
+
+        } catch (error) {
+            const msg = getErrorMessage(error);
+            console.error("Cancel error:", msg);
+            showNotification(msg, "error");
+        }
+    };
+
 
     useEffect(() => {
         console.log(`loading steps and transitions...`);
@@ -187,7 +195,7 @@ const PrescriptionProcessTab = () => {
         setPrescriberDialog({ isOpen: false, prescription: null });
     };
 
-     const openPharmacistDialog = (prescriptionId) => {
+    const openPharmacistDialog = (prescriptionId) => {
         setPharmacistDialog({ isOpen: true, prescriptionId });
     };
 
@@ -200,7 +208,7 @@ const PrescriptionProcessTab = () => {
             await axios.post(
                 `/${init.appName}/api/prescriber/contact`,
                 payload,
-                { headers: { "X-User-Email": appUser.email } }
+                { headers: { "Authorization": `Bearer ${token}` } }
             );
             showNotification("Message sent to prescriber.");
             closePrescriberDialog();
@@ -215,7 +223,7 @@ const PrescriptionProcessTab = () => {
             await axios.post(
                 `/${init.appName}/api/prescriber/contact`,
                 payload,
-                { headers: { "X-User-Email": appUser.email } }
+                { headers: { "Authorization": `Bearer ${token}` } }
             );
             showNotification("Pharmacist note has been saved.");
             closePrescriberDialog();
@@ -283,6 +291,15 @@ const PrescriptionProcessTab = () => {
         };
         return colors[wokflowStepId] || 'bg-gray-100 text-gray-800 border-gray-300';
     };
+
+    const openCancelDialog = (prescription) => {
+        setCancelDialog({ isOpen: true, prescription });
+    };
+
+    const closeCancelDialog = () => {
+        setCancelDialog({ isOpen: false, prescription: null });
+    };
+
 
     const DrugInfoComponent = ({ prescription }) => {
         return (
@@ -364,7 +381,7 @@ const PrescriptionProcessTab = () => {
                     )}
 
                     {/* Scrollable Content Area */}
-                    <div className="max-h-[75vh] overflow-y-auto pr-2">
+                    <div className="max-h-[55vh] overflow-y-auto pr-2">
 
                         {filteredPrescriptions.length > 0 && transitions.length > 0 && (
                             <div className="grid gap-4">
@@ -372,7 +389,7 @@ const PrescriptionProcessTab = () => {
                                     const tasks = EXTRA_TASKS[item.currentStep] || [];
                                     const transition = transitions.find(t => t.fromStep === item.currentStep);
                                     const toSteps = transition?.toSteps.filter(step => step !== item.currentStep) || [];
-
+                                    const numberOfButtons = tasks.length + toSteps.length;
                                     return (
                                         <div
                                             key={item.prescriptionId}
@@ -421,28 +438,35 @@ const PrescriptionProcessTab = () => {
                                             <DrugInfoComponent prescription={item} />
 
                                             {/* Actions */}
-                                            <div className="flex flex-wrap gap-2 mt-3">
-
+                                           
+                                            <div className="grid grid-flow-col auto-cols-fr gap-2 mt-3 w-full">
                                                 {tasks.map(task => (
-                                                    <button
-                                                        key={task.code}
-                                                        onClick={() => runTask(item, task)}
-                                                        className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm"
-                                                    >
-                                                        {task.label}
-                                                    </button>
+                                                    <Tooltip key={task.code} text={TASK_TOOLTIPS[task.code]}>
+                                                        <button
+                                                            onClick={() => runTask(item, task)}
+                                                            className="cursor-pointer w-full px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-center"
+                                                        >
+                                                            {task.label}
+                                                        </button>
+                                                    </Tooltip>
                                                 ))}
 
                                                 {toSteps.map(step => (
-                                                    <button
-                                                        key={step}
-                                                        onClick={() => goToNextStep(item, step)}
-                                                        className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${getWorkflowStepColor(step)}`}
-                                                    >
-                                                        {convertStrToCamelCase(step)}
-                                                    </button>
+                                                    <Tooltip key={step} text={WORKFLOW_STEP_TOOLTIPS[step]}>
+                                                        <button
+                                                            onClick={() =>
+                                                                step === CANCELLED
+                                                                    ? openCancelDialog(item)
+                                                                    : goToNextStep(item, step)
+                                                            }
+                                                            className={`cursor-pointer w-full px-4 py-2 rounded-lg text-sm font-medium text-center transition-colors ${getWorkflowStepColor(step)}`}
+                                                        >
+                                                            {convertStrToCamelCase(step)}
+                                                        </button>
+                                                    </Tooltip>
                                                 ))}
                                             </div>
+
                                         </div>
                                     );
                                 })}
@@ -467,7 +491,7 @@ const PrescriptionProcessTab = () => {
                 onSubmit={sendPrescriberMessage}
             />
 
-             <PharmacistNoteDialog
+            <PharmacistNoteDialog
                 open={pharmacistDialog.isOpen}
                 mode='create'
                 existingNote={null}
@@ -475,6 +499,14 @@ const PrescriptionProcessTab = () => {
                 onClose={closePharmacistDialog}
                 onSaved={updatePrescriptionWithPharmacistNote}
             />
+
+            <CancelPrescriptionDialog
+                open={cancelDialog.isOpen}
+                prescription={cancelDialog.prescription}
+                onClose={closeCancelDialog}
+                onSubmit={submitCancellation}
+            />
+
         </div>
     );
 

@@ -12,7 +12,7 @@ import axios from "axios";
 const baseUrl = `/${init.appName}/api/stations`;
 
 export default function StationPage() {
-    const { appUser } = useUser();
+    const { appUser, token } = useUser();
 
     const [stations, setStations] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -48,7 +48,7 @@ export default function StationPage() {
             .get(`/${init.appName}/api/stations?page=0&size=200`, {
                 headers: {
                     "Content-Type": "application/json",
-                    "X-User-Email": appUser.email,
+                    "Authorization": `Bearer ${token}`,
                 },
             })
             .then((res) => {
@@ -72,7 +72,7 @@ export default function StationPage() {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "X-User-Email": appUser.email,
+                    "Authorization": `Bearer ${token}`,
                 },
                 body: JSON.stringify(station),
             });
@@ -96,7 +96,7 @@ export default function StationPage() {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
-                    "X-User-Email": appUser.email,
+                    "Authorization": `Bearer ${token}`,
                 },
                 body: JSON.stringify(station),
             });
@@ -119,7 +119,7 @@ export default function StationPage() {
         try {
             const res = await fetch(`${baseUrl}/${id}`, {
                 method: "DELETE",
-                headers: { "X-User-Email": appUser.email },
+                headers: { "Authorization": `Bearer ${token}` },
             });
 
             if (!res.ok) throw new Error("Failed to delete station");

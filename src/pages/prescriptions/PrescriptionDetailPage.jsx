@@ -6,7 +6,7 @@ import { useUser } from "../../context/UserContext";
 
 export default function PrescriptionDetailPage() {
     const { id } = useParams();
-    const { appUser } = useUser();
+    const { appUser, token } = useUser();
 
     const [rx, setRx] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -14,7 +14,7 @@ export default function PrescriptionDetailPage() {
     const fetchRx = () => {
         axios
             .get(`/${init.appName}/api/prescription-aggregate/${id}`, {
-                headers: { "X-User-Email": appUser.email }
+                headers: { "Authorization": `Bearer ${token}` }
             })
             .then(res => setRx(res.data))
             .finally(() => setLoading(false));

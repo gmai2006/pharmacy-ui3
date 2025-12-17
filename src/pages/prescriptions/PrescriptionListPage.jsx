@@ -5,7 +5,7 @@ import { useUser } from "../../context/UserContext";
 import { Link } from "react-router-dom";
 
 export default function PrescriptionListPage() {
-    const { appUser } = useUser();
+    const { appUser, token } = useUser();
 
     const [list, setList] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -17,7 +17,7 @@ export default function PrescriptionListPage() {
         setLoading(true);
         axios
             .get(`/${init.appName}/api/prescription-aggregate?max=200`, {
-                headers: { "X-User-Email": appUser.email }
+                headers: { "Authorization": `Bearer ${token}` }
             })
             .then(res => setList(res.data))
             .finally(() => setLoading(false));
@@ -31,7 +31,7 @@ export default function PrescriptionListPage() {
                 `/${init.appName}/api/prescription-aggregate/search?name=${encodeURIComponent(
                     searchName
                 )}`,
-                { headers: { "X-User-Email": appUser.email } }
+                { headers: { "Authorization": `Bearer ${token}` } }
             )
             .then(res => setList(res.data));
     };

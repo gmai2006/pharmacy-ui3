@@ -29,15 +29,6 @@ export const convertWordToCamelCase = (word) => {
   if (word.length <= 2) return word;
   return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
 }
-export const READY_TO_FILL = 'READY_FOR_FILL';
-export const IN_REVIEW = 'IN_REVIEW';
-export const AWAITING_PICKUP = 'AWAITING_PICKUP';
-export const COMPLETED = 'COMPLETED';
-export const READY_FOR_DELIVERY = 'READY_FOR_DELIVERY';
-export const CANCELLED = 'CANCELLED';
-export const PICKUP_READY = 'PICKUP_READY';
-export const QA_CHECK = 'QA_CHECK';
-export const PHARMACIST_REVIEW = 'PHARMACIST_REVIEW';
 
 export const convertDateArrayToDate = (dateArray) => {
   return new Date(dateArray[0], dateArray[1],  dateArray[2]);

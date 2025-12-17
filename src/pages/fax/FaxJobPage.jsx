@@ -26,7 +26,7 @@ const priorityColors = {
 };
 
 const FaxJobPage = () => {
-    const { appUser } = useUser();
+    const { appUser, token } = useUser();
 
     const [faxJobs, setFaxJobs] = useState([]);
     const [notification, setNotification] = useState(null);
@@ -45,7 +45,7 @@ const FaxJobPage = () => {
             const response = await fetch(faxJobsUrl, {
                 headers: {
                     "Content-Type": "application/json",
-                    "X-User-Email": appUser.email,
+                    "Authorization": `Bearer ${token}`,
                 }
             });
 
@@ -84,7 +84,7 @@ const FaxJobPage = () => {
         try {
             const url = downloadUrl(jobId);
             const response = await fetch(url, {
-                headers: { "X-User-Email": appUser.email }
+                headers: { "Authorization": `Bearer ${token}` }
             });
 
             if (!response.ok) {
@@ -92,7 +92,7 @@ const FaxJobPage = () => {
             }
 
             const blob = await response.blob();
-            const filename = response.headers.get("Content-Disposition")?.split("filename=")[1]?.replace(/"/g, "") 
+            const filename = response.headers.get("Content-Disposition")?.split("filename=")[1]?.replace(/"/g, "")
                 || `fax-document-${jobId}.pdf`;
 
             const link = document.createElement("a");
@@ -116,7 +116,7 @@ const FaxJobPage = () => {
                 method: "DELETE",
                 headers: {
                     "Content-Type": "application/json",
-                    "X-User-Email": appUser.email,
+                    "Authorization": `Bearer ${token}`,
                 }
             });
 
@@ -156,11 +156,70 @@ const FaxJobPage = () => {
     };
 
     // -----------------------------------------------------------------------
+    // EXPORT CSV (mirrors UserPage style)
+    // -----------------------------------------------------------------------
+    const exportToCSV = () => {
+        if (faxJobs.length === 0) {
+            showNotification("No fax jobs to export", "error");
+            return;
+        }
+
+        // CSV columns
+        const csvHeaders = [
+            "ID",
+            "Subject",
+            "Provider",
+            "Fax Number",
+            "Direction",
+            "Status",
+            "Priority",
+            "Created At",
+            "Completed At"
+        ];
+
+        const csvRows = faxJobs.map(job => [
+            job.id,
+            job.subject || "",
+            job.providerName || "",
+            job.faxNumber || "",
+            job.direction || "",
+            job.status || "",
+            job.priority || "",
+            job.createdAt ? new Date(job.createdAt).toISOString() : "",
+            job.completedAt ? new Date(job.completedAt).toISOString() : ""
+        ]);
+
+        const csvContent = [
+            csvHeaders.join(","),
+            ...csvRows.map(row =>
+                row
+                    .map(cell =>
+                        typeof cell === "string" && (cell.includes(",") || cell.includes("\""))
+                            ? `"${cell.replace(/"/g, '""')}"`
+                            : cell
+                    )
+                    .join(",")
+            )
+        ].join("\n");
+
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `fax_jobs_${new Date().toISOString().split("T")[0]}.csv`;
+        link.click();
+
+        showNotification("Fax jobs exported successfully", "success");
+    };
+
+
+    // -----------------------------------------------------------------------
     // UI RENDERING
     // -----------------------------------------------------------------------
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white p-8">
-            
+
             {notification && (
                 <Notification notification={notification} />
             )}
@@ -173,7 +232,10 @@ const FaxJobPage = () => {
                 </div>
 
                 {/* Search + Count */}
-                <div className="flex gap-4 mb-8 items-center flex-wrap">
+                {/* Search + Total + Export CSV */}
+                <div className="flex flex-wrap items-center justify-between mb-8 gap-4">
+
+                    {/* Search Box */}
                     <input
                         type="text"
                         placeholder="Search by subject, status, provider, fax number..."
@@ -183,13 +245,34 @@ const FaxJobPage = () => {
                             setCurrentPage(1);
                         }}
                         className="flex-1 min-w-64 px-4 py-3 border border-gray-300 rounded-lg 
-                                   focus:ring-2 focus:ring-blue-500"
+                   focus:ring-2 focus:ring-blue-500"
                     />
 
-                    <div className="text-lg font-semibold text-gray-700">
-                        Total Jobs: <span className="text-blue-600">{faxJobs.length}</span>
+                    {/* Right Side: Total Jobs + Export */}
+                    <div className="flex items-center gap-4">
+                        <div className="text-lg font-semibold text-gray-700">
+                            Total Jobs: <span className="text-blue-600">{faxJobs.length}</span>
+                        </div>
+
+                        <button
+                            onClick={exportToCSV}
+                            disabled={faxJobs.length === 0}
+                            className="
+                flex items-center gap-2 
+                bg-green-600 text-white 
+                px-6 py-3 rounded-lg 
+                hover:bg-green-700 
+                disabled:bg-gray-400 disabled:cursor-not-allowed 
+                transition font-medium
+            "
+                            title="Export fax jobs to CSV"
+                        >
+                            <Download size={20} />
+                            Export CSV
+                        </button>
                     </div>
                 </div>
+
 
                 {/* JOBS TABLE */}
                 <div className="bg-white rounded-lg shadow-lg overflow-hidden">

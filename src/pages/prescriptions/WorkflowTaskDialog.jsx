@@ -4,14 +4,14 @@ import init from "../../init";
 import { useUser } from "../../context/UserContext";
 
 export default function WorkflowTaskDialog({ item, task, onClose }) {
-    const { appUser } = useUser();
+    const { appUser, token } = useUser();
     const [data, setData] = useState("");
 
     const submit = () => {
         axios.post(
             `/${init.appName}/api/prescription-items/${item.prescriptionItemId}/task`,
             { taskCode: task.code, data },
-            { headers: { "X-User-Email": appUser.email } }
+            { headers: { "Authorization": `Bearer ${token}` } }
         )
         .then(onClose)
         .catch((err) => alert("Task failed: " + err.message));

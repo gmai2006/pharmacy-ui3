@@ -5,7 +5,7 @@ import Notification from "../../components/Notification";
 import { useUser } from "../../context/UserContext";
 
 export default function WorkflowPanel({ currentStep, onTransition }) {
-    const { appUser } = useUser();
+    const { appUser, token } = useUser();
 
     const [nextSteps, setNextSteps] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -24,7 +24,7 @@ export default function WorkflowPanel({ currentStep, onTransition }) {
             {
                 headers: {
                     "Content-Type": "application/json",
-                    "X-User-Email": appUser?.email,
+                    "Authorization": `Bearer ${token}`,
                 },
             }
         )
@@ -60,7 +60,7 @@ export default function WorkflowPanel({ currentStep, onTransition }) {
             {
                 headers: {
                     "Content-Type": "application/json",
-                    "X-User-Email": appUser?.email,
+                    "Authorization": `Bearer ${token}`,
                 },
             }
         )

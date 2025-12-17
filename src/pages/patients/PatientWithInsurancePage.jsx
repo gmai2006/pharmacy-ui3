@@ -6,7 +6,7 @@ import Notification from "../../components/Notification";
 import { Pencil, Trash2 } from "lucide-react";
 
 export default function PatientWithInsurancePage() {
-    const { appUser } = useUser();
+    const { appUser, token } = useUser();
 
     const [patients, setPatients] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -47,7 +47,7 @@ export default function PatientWithInsurancePage() {
             .get(`/${init.appName}/api/patients?page=0&size=100`, {
                 headers: {
                     "Content-Type": "application/json",
-                    "X-User-Email": appUser?.email
+                    "Authorization": `Bearer ${token}`
                 }
             })
             .then((res) => setPatients(res.data.content || []))
@@ -58,7 +58,7 @@ export default function PatientWithInsurancePage() {
     const fetchInsurancePlans = () => {
         axios
             .get(`/${init.appName}/api/insurance-plans?page=0&size=200`, {
-                headers: { "X-User-Email": appUser?.email }
+                headers: { "Authorization": `Bearer ${token}` }
             })
             .then((res) => {
                 const activeOnly = (res.data.content || []).filter((p) => p.active === true);
@@ -84,7 +84,7 @@ export default function PatientWithInsurancePage() {
             .get(
                 `/${init.appName}/api/patient-insurance-summary/by-patient/${patient.id}`,
                 {
-                    headers: { "Content-Type": "application/json", "X-User-Email": appUser?.email }
+                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` }
                 }
             )
             .then((res) => setInsuranceList(res.data))
@@ -144,12 +144,12 @@ export default function PatientWithInsurancePage() {
             ? axios.put(
                   `/${init.appName}/api/patients/${editingPatient.id}`,
                   payload,
-                  { headers: { "Content-Type": "application/json", "X-User-Email": appUser?.email } }
+                  { headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` } }
               )
             : axios.post(
                   `/${init.appName}/api/patients`,
                   payload,
-                  { headers: { "Content-Type": "application/json", "X-User-Email": appUser?.email } }
+                  { headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` } }
               );
 
         request
@@ -169,7 +169,7 @@ export default function PatientWithInsurancePage() {
 
         axios
             .delete(`/${init.appName}/api/patients/${patient.id}`, {
-                headers: { "Content-Type": "application/json", "X-User-Email": appUser?.email }
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` }
             })
             .then(() => {
                 notify("success", "Patient deleted.");

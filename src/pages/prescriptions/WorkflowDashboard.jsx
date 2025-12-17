@@ -20,7 +20,7 @@ const WORKFLOW_STEPS = [
 ];
 
 export default function WorkflowDashboard() {
-  const { appUser } = useUser();
+  const { appUser, token } = useUser();
 
   // Role extraction from actor
   const role = appUser?.roles?.[0]?.roleName ?? "TECH";
@@ -49,7 +49,7 @@ export default function WorkflowDashboard() {
         {
           headers: {
             "Content-Type": "application/json",
-            "X-User-Email": appUser.email,
+            "Authorization": `Bearer ${token}`,
             "X-User-Role": role,
           },
         }

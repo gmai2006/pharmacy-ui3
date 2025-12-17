@@ -14,6 +14,7 @@ import {
     ShieldAlert,
     Activity,
     Search,
+    Download,
 } from "lucide-react";
 import { getErrorMessage } from "../../utils/util";
 
@@ -22,7 +23,7 @@ const CLAIMS_ENDPOINT = (max = 200) =>
 // Adjust this to your actual REST path for v_claims_dashboard_summary
 
 const ClaimsDashboard = () => {
-    const { appUser } = useUser();
+    const { appUser, token } = useUser();
 
     const [notification, setNotification] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -58,11 +59,11 @@ const ClaimsDashboard = () => {
         try {
             setLoading(true);
             const res = await axios.get(CLAIMS_ENDPOINT(200), {
-                headers: { "X-User-Email": appUser.email },
+                headers: { "Authorization": `Bearer ${token}`, },
             });
             const data = res.data?.content || res.data || [];
             const filtered = data.filter(data => data !== null);
-            
+
             setClaims(filtered);
             setFilteredClaims(filtered);
 
@@ -227,6 +228,86 @@ const ClaimsDashboard = () => {
     };
 
     // -------------------------
+    // EXPORT TO CSV
+    // -------------------------
+    const exportToCsv = () => {
+        if (!filteredClaims || filteredClaims.length === 0) {
+            showNotification("No data available to export.", "error");
+            return;
+        }
+
+        // CSV headers
+        const headers = [
+            "Queue",
+            "State",
+            "Patient First Name",
+            "Patient Last Name",
+            "MRN",
+            "Claim Number",
+            "Prescription ID",
+            "Payer ID",
+            "BIN",
+            "Group ID",
+            "Plan Paid",
+            "Patient Pay",
+            "Last Tx Status",
+            "Last Tx Code",
+            "Reject Codes",
+            "Last Activity",
+            "Claim Submitted"
+        ];
+
+        // CSV rows
+        const rows = filteredClaims.map((c) => {
+            const rejectCodes = Array.isArray(c.lastRejectCodes)
+                ? c.lastRejectCodes.join(";")
+                : Array.isArray(c.claimMasterRejects)
+                    ? c.claimMasterRejects.join(";")
+                    : "";
+
+            const clean = (v) => {
+                if (v === null || v === undefined) return "";
+                const s = String(v).replace(/"/g, '""');
+                return `"${s}"`;
+            };
+
+            return [
+                clean(c.recommendedQueue),
+                clean(c.dashboardState),
+                clean(c.patientFirstName),
+                clean(c.patientLastName),
+                clean(c.patientMrn),
+                clean(c.claimNumber),
+                clean(c.prescriptionId),
+                clean(c.payerId),
+                clean(c.bin),
+                clean(c.groupId),
+                clean(c.planPaidAmount),
+                clean(c.patientPayAmount),
+                clean(c.lastTransactionStatus || c.claimMasterStatus),
+                clean(c.lastTransactionCode),
+                clean(rejectCodes),
+                clean(formatDateTime(c.lastTransactionAt)),
+                clean(formatDateTime(c.claimSubmittedAt)),
+            ].join(",");
+        });
+
+        const csv = [headers.join(","), ...rows].join("\n");
+
+        // Trigger download
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", "claims-dashboard.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+
+    // -------------------------
     // UI RENDER
     // -------------------------
     return (
@@ -247,6 +328,7 @@ const ClaimsDashboard = () => {
                             </p>
                         </div>
                         <div className="flex items-center gap-3">
+
                             <button
                                 onClick={loadClaims}
                                 className="px-3 py-1.5 text-xs rounded border bg-white hover:bg-gray-50 flex items-center gap-1"
@@ -255,17 +337,21 @@ const ClaimsDashboard = () => {
                                 <Activity size={14} />
                                 {loading ? "Refreshing..." : "Refresh"}
                             </button>
+
+                            <button
+                                onClick={exportToCsv}
+                                className="px-3 py-1.5 text-xs rounded border bg-white hover:bg-gray-50 flex items-center gap-1"
+                            >
+                                <Download size={14} />
+                                Export CSV
+                            </button>
+
                             <div className="text-xs text-gray-500">
-                                Showing{" "}
-                                <span className="font-semibold">
-                                    {filteredClaims.length}
-                                </span>{" "}
-                                of{" "}
-                                <span className="font-semibold">
-                                    {claims.length}
-                                </span>
+                                Showing <span className="font-semibold">{filteredClaims.length}</span> of{" "}
+                                <span className="font-semibold">{claims.length}</span>
                             </div>
                         </div>
+
                     </div>
 
                     {/* Filters */}
@@ -294,9 +380,8 @@ const ClaimsDashboard = () => {
                                         <button
                                             key={state}
                                             onClick={() => handleStateClick(state)}
-                                            className={`${className} ${
-                                                isActive ? "ring-2 ring-offset-1 ring-indigo-500" : ""
-                                            }`}
+                                            className={`${className} ${isActive ? "ring-2 ring-offset-1 ring-indigo-500" : ""
+                                                }`}
                                         >
                                             {icon}
                                             <span>{state.replace("_", " ")}</span>
@@ -317,9 +402,8 @@ const ClaimsDashboard = () => {
                                     <button
                                         key={q}
                                         onClick={() => handleQueueClick(q)}
-                                        className={`${getQueuePillClass(q)} ${
-                                            isActive ? "ring-2 ring-offset-1 ring-indigo-500" : ""
-                                        }`}
+                                        className={`${getQueuePillClass(q)} ${isActive ? "ring-2 ring-offset-1 ring-indigo-500" : ""
+                                            }`}
                                     >
                                         {q.replace(/_/g, " ")}
                                     </button>
@@ -381,9 +465,8 @@ const ClaimsDashboard = () => {
 
                                         return (
                                             <tr
-                                                key={`${c.claimId || "noclaim"}-${
-                                                    c.prescriptionId
-                                                }`}
+                                                key={`${c.claimId || "noclaim"}-${c.prescriptionId
+                                                    }`}
                                                 className="hover:bg-gray-50"
                                             >
                                                 {/* Queue */}
@@ -410,9 +493,9 @@ const ClaimsDashboard = () => {
                                                         <span>
                                                             {c.dashboardState
                                                                 ? c.dashboardState.replace(
-                                                                      /_/g,
-                                                                      " "
-                                                                  )
+                                                                    /_/g,
+                                                                    " "
+                                                                )
                                                                 : "UNKNOWN"}
                                                         </span>
                                                     </span>

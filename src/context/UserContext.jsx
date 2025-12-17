@@ -11,38 +11,15 @@ const headers = {
   'Accept': 'application/json'
 };
 
-const getHeaders = (email) => {
+const getHeaders = (rawIdToken) => {
   return {
-    "X-User-Email": email  // 👈 your Okta email goes here
+    "Authorization": `Bearer ${rawIdToken}`,
   }
 };
 
 const getActiveUser = '/' + init.appName + '/api/users/';
-const systemAuthUrl = '/' + init.appName + '/api/' + 'authlogs/';
-const selectUrl = `/${init.appName}/api/devicefingerprints/selectAll`;
-const deviceUrl = `/${init.appName}/api/devicefingerprints/`;
-const stationsUrl = `/${init.appName}/api/stations/selectAll`;
 
-
-const getStations = async () => {
-  const response = await axios.get(stationsUrl);
-  return response.data;
-}
-
-const getDevices = async () => {
-  try {
-    const response = await fetch(selectUrl, { headers: headers });
-    if (!response.ok) throw new Error('Failed to fetch devices');
-    return await response.json();
-  } catch (error) {
-    console.error('Error fetching data:', error);
-    showNotification('Failed to load users', 'error');
-  } finally {
-
-  }
-};
-
-const createAuthlog = async (appUser, eventType, status, error) => {
+const createAuthlog = async (rawIdToken, eventType, status, error) => {
   await axios.post(`/${init.appName}/api/authlogs`, {
     eventType: eventType,
     status: status,
@@ -56,34 +33,11 @@ const createAuthlog = async (appUser, eventType, status, error) => {
   }, {
     headers: {
       "Content-Type": "application/json",
-      "X-User-Email": appUser.email
+      "Authorization": `Bearer ${rawIdToken}`,
     }
   });
 }
 
-// Handle add a new station
-const registerDevice = async (data) => {
-  try {
-    const response = await fetch(deviceUrl, {
-      method: 'PUT',
-      headers: headers,
-      body: JSON.stringify({
-        ...data,
-      })
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to register new station');
-    }
-
-    return await response.json();
-
-  } catch (error) {
-    console.error('Error registering a station:', error);
-  } finally {
-  }
-};
 
 export function UserContextProvider({ children }) {
   const {
@@ -92,142 +46,81 @@ export function UserContextProvider({ children }) {
     isLoading,
     loginWithRedirect,
     logout,
-    getAccessTokenSilently
+    getAccessTokenSilently,
+    getIdTokenClaims
   } = useAuth0();
 
-  const department = `Pharmacy`;
-  const location = `TBD`;
   let beingLogin = false;
 
   const [appUser, setAppUser] = useState(undefined);
   const [error, setError] = useState(undefined);
-  const [stationName, setStationName] = useState(`Not Found`);
-  
-  const initializeStation = async () => {
+  const [token, setToken] = useState(undefined);
+
+  const getUser = async (rawIdToken) => {
+
     try {
-
-      // Check localStorage first
-      const savedStationId = localStorage.getItem('stationId');
-      const savedStationName = localStorage.getItem('stationName');
-      const savedTimestamp = localStorage.getItem('stationTimestamp');
-      const devices = await getDevices();
-
-      if (savedStationId && savedTimestamp) {
-        // Verify station is still valid
-        const exists = devices.find(device => device.id === savedStationId);
-        if (exists) {
-          setStationName(savedStationName);
-          // updateLastSeen(savedStationId);
-          // onStationReady(savedStationId);
-          return;
-        }
-      }
-
-      const stations = await getStations();
-
-      // Generate device fingerprint
-      const fingerprint = await DeviceFingerprintService.generateFingerprint();
-      const fingerprintHash = await DeviceFingerprintService.createFingerprintHash(fingerprint);
-      const existingDevice = devices.find(device => device.fingerprintHash === fingerprintHash);
-
-      if (existingDevice) {
-        const station = stations.find(s => s.id == existingDevice.stationId);
-        const localStationName = station.stationPrefix + '00' + station.id;
-        setStationName(localStationName);
-        localStorage.setItem('stationId', existingDevice.id);
-        localStorage.setItem('stationName', localStationName);
-        localStorage.setItem('stationTimestamp', new Date().toISOString());
-        localStorage.setItem('fingerprintHash', JSON.stringify(fingerprintHash));
-        return;
-      }
-
-      //not found => register a new station
-      const newStation = await registerDevice({
-        fingerprintHash: fingerprintHash,
-        department: department,
-        location: location,
-        browserUserAgent: navigator.userAgent,
-        screenResolution: DeviceFingerprintService.getScreenResolution(),
-        timezone: DeviceFingerprintService.getTimezone(),
-        accessCount: 1
-      });
-
-      const station = stations.find(s => s.id == newStation.stationId);
-      const localStationName = station.stationPrefix + '00' + station.id;
-      setStationName(localStationName);
-
-      // Store in localStorage for quick access
-      localStorage.setItem('stationId', newStation.id);
-      localStorage.setItem('stationName', localStationName);
-      localStorage.setItem('stationTimestamp', new Date().toISOString());
-      localStorage.setItem('deviceFingerprint', JSON.stringify(fingerprintHash));
-
-    } catch (err) {
-      console.error('Station initialization error:', err);
-      setError(err.response?.data?.error || 'Failed to initialize station');
-    } finally {
-
-    }
-  };
-
-  const getUser = async (email) => {
-    try {
-      const response = await fetch(`${getActiveUser}`, { headers: getHeaders(email) });
+      const response = await fetch(`${getActiveUser}`, { headers: getHeaders(rawIdToken, '') });
+      
       if (!response.ok) throw new Error('Failed to fetch user');
       const user = await response.json();
       setAppUser(user);
       localStorage.setItem('user', JSON.stringify(user));
       console.log('User fetched:', user);
-      if (!localStorage.getItem(email)) {
-        await createAuthlog(user, `login`, `success`, `none`);
-        localStorage.setItem(email, `login`);
+      if (!localStorage.getItem(rawIdToken)) {
+        await createAuthlog(rawIdToken, `login`, `success`, `none`);
+        localStorage.setItem(rawIdToken, `login`);
       }
     } catch (error) {
       console.error('Error fetching data:', error);
-      if (!localStorage.getItem(email)) {
-        await createAuthlog(user, `login`, `failure`, error);
-        localStorage.setItem(email, error);
+      if (!localStorage.getItem(rawIdToken)) {
+        await createAuthlog(rawIdToken, `login`, `failure`, error);
+        localStorage.setItem(rawIdToken, error);
       }
     } finally {
 
     }
   };
+
   const cleanupAndLogout = async () => {
     console.log(`clear the localStorage`);
-    await createAuthlog(appUser, `logout`, `success`, `none`);
+    await createAuthlog(token, `logout`, `success`, `none`);
     setAppUser(undefined);
+    setToken(undefined);
     localStorage.clear();
     logout({ logoutParams: { returnTo: window.location.origin } });
   }
 
   useEffect(() => {
     const initialize = async () => {
-      if (beingLogin || appUser) return;
+      if (appUser) return;
+
+      if (beingLogin) return;
       beingLogin = !beingLogin;
-      console.log(`calling initialize ...`);
-      // await initializeStation();
-      if (!appUser && import.meta.env.VITE_DEV) {
+
+      if (import.meta.env.VITE_DEV) {
         console.log(`user context: get user from local dev user ${import.meta.env.VITE_DEV}`);
+        setToken(import.meta.env.VITE_DEV);
         await getUser(import.meta.env.VITE_DEV);
       } else if (user && !appUser) {
-        console.log(`user context: get user from okta user ${user?.email}`);
-        await getUser(user.email);
+        const claims = await getIdTokenClaims();
+        const rawIdToken = claims.__raw;
+        console.log(rawIdToken);
+        setToken(rawIdToken);
+        await getUser(rawIdToken);
       }
       beingLogin = !beingLogin;
     }
     initialize();
-  }, []);
+  }, [isAuthenticated, appUser]);
 
   const value = {
     user,
     appUser,
     isAuthenticated,
     isLoading,
-    stationName,
+    token,
     loginWithRedirect,
     login: () => loginWithRedirect(),
-    // logout: () =>
-    //   logout({ logoutParams: { returnTo: window.location.origin } }),
     logout: () => cleanupAndLogout(),
     getAccessTokenSilently
   };

@@ -104,6 +104,15 @@ const ContactPrescriberDialog = ({
 
     const presets = REASON_PRESETS[contactType] || [];
 
+    const handleSubmit = (jobType) => {
+        onSubmit({
+            prescriptionId: prescription?.prescriptionId,
+            contactType,
+            reason,
+            noteToPrescriber: notes
+        }, jobType);
+    }
+
     return (
         <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
             <div className="bg-white w-full max-w-md rounded-lg shadow-xl p-6">
@@ -125,7 +134,7 @@ const ContactPrescriberDialog = ({
                     <div>
                         <label className="text-sm text-gray-600">Prescriber</label>
                         <div className="font-medium text-gray-900">
-                            {prescription?.prescriberName}
+                            {prescription?.prescriberFirstName} {prescription?.prescriberLastName}
                         </div>
                     </div>
 
@@ -188,18 +197,17 @@ const ContactPrescriberDialog = ({
                     </button>
 
                     <button
-                        onClick={() =>
-                            onSubmit({
-                                prescriptionId: prescription?.prescriptionId,
-                                prescriberId: prescription?.prescriberId,
-                                contactType,
-                                reason,
-                                noteToPrescriber: notes
-                            })
-                        }
+                        onClick={() => handleSubmit('generate')}
                         className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
                     >
-                        Send
+                        Create PDF
+                    </button>
+
+                    <button
+                        onClick={() => handleSubmit('generate-and-create-job')}
+                        className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
+                    >
+                        Create PDF and Send
                     </button>
                 </div>
 

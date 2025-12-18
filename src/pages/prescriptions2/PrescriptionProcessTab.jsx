@@ -81,7 +81,7 @@ const PrescriptionProcessTab = () => {
 
     const loadPrescriptionSummary = async () => {
         const res = await axios.get(
-            `/${init.appName}/api/prescription-aggregate?max=200`,
+            `/${init.appName}/api/prescription-aggregate/active?max=200`,
             { headers: { "Authorization": `Bearer ${token}` } }
         );
         setPrescriptions(res.data || []);
@@ -136,20 +136,8 @@ const PrescriptionProcessTab = () => {
         }
     };
 
-    const submitCancellation = async ({ prescriptionId, cancellationNote }) => {
+    const submitCancellation = async () => {
         try {
-            await axios.post(
-                `/${init.appName}/api/workflow/transition/`,
-                {
-                    prescriptionId,
-                    fromStep: 'ANY',       // or the actual current step
-                    toStep: CANCELLED,
-                    cancellationNote,
-                    userAgent: navigator.userAgent
-                },
-                { headers: { "Authorization": `Bearer ${token}` } }
-            );
-
             await loadPrescriptionSummary();
             closeCancelDialog();
             showNotification("Prescription cancelled successfully.", "success");
@@ -203,13 +191,20 @@ const PrescriptionProcessTab = () => {
         setPharmacistDialog({ isOpen: false, prescriptionId: null });
     };
 
-    const sendPrescriberMessage = async (payload) => {
+    const sendPrescriberMessage = async (payload, jobType) => {
         try {
-            await axios.post(
-                `/${init.appName}/api/prescriber/contact`,
+            const res = await axios.post(
+                `/${init.appName}/api/prescriber-fax/${jobType}`,
                 payload,
-                { headers: { "Authorization": `Bearer ${token}` } }
+                { responseType: "blob", headers: { "Authorization": `Bearer ${token}` } }
             );
+
+            if (`generate` === jobType) {
+                const blob = new Blob([res.data], { type: "application/pdf" });
+                const url = window.URL.createObjectURL(blob);
+                window.open(url, "_blank");
+            }
+
             showNotification("Message sent to prescriber.");
             closePrescriberDialog();
         } catch (err) {
@@ -218,13 +213,8 @@ const PrescriptionProcessTab = () => {
         }
     };
 
-    const updatePrescriptionWithPharmacistNote = async (payload) => {
+    const updatePrescriptionWithPharmacistNote = async () => {
         try {
-            await axios.post(
-                `/${init.appName}/api/prescriber/contact`,
-                payload,
-                { headers: { "Authorization": `Bearer ${token}` } }
-            );
             showNotification("Pharmacist note has been saved.");
             closePrescriberDialog();
         } catch (err) {
@@ -249,11 +239,7 @@ const PrescriptionProcessTab = () => {
     const runTask = (item, task) => {
         switch (task.code) {
             case "CONTACT_PRESCRIBER":
-                openPrescriberDialog({
-                    prescriptionId: item.prescriptionItemId,
-                    prescriberId: item.prescriberId,
-                    prescriberName: item.prescriberName
-                });
+                openPrescriberDialog(item);
                 break;
 
             case "PRINT_BARCODE":
@@ -438,7 +424,7 @@ const PrescriptionProcessTab = () => {
                                             <DrugInfoComponent prescription={item} />
 
                                             {/* Actions */}
-                                           
+
                                             <div className="grid grid-flow-col auto-cols-fr gap-2 mt-3 w-full">
                                                 {tasks.map(task => (
                                                     <Tooltip key={task.code} text={TASK_TOOLTIPS[task.code]}>

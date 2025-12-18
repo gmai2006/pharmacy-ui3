@@ -97,7 +97,7 @@ export default function CancelPrescriptionDialog({
                 { headers: { "Authorization": `Bearer ${token}` } }
             );
 
-            onSaved?.();
+            onSaved();
             onClose();
         } catch (err) {
             console.error("Cancel error:", err);
